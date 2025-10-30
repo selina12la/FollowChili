@@ -237,7 +237,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2554720417436106229}
   - component: {fileID: 5619985934887145615}
-  - component: {fileID: -8430636172250190301}
+  - component: {fileID: 8578100800823467108}
+  - component: {fileID: 6133402229695496089}
   m_Layer: 0
   m_Name: cat
   m_TagString: Untagged
@@ -284,7 +285,7 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &-8430636172250190301
+--- !u!114 &8578100800823467108
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -293,12 +294,28 @@ MonoBehaviour:
   m_GameObject: {fileID: 1526554761915109350}
   m_Enabled: 1
   m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 572373a84ce9c9340af2dc5905d4f6c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CatFollowToy
+  target: {fileID: 0}
+  moveSpeed: 0.5
+  rotationSpeed: 5
+--- !u!114 &6133402229695496089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1526554761915109350}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ef2364f3bc6473749bf3010cdf97de0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatMovement
   moveSpeed: 0.5
   waitTime: 1
   moveRange: 1.5
+  rotationSpeed: 5
 --- !u!1 &1921977085086819228
 GameObject:
   m_ObjectHideFlags: 0
