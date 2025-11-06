@@ -5,11 +5,9 @@ using UnityEngine.XR.ARSubsystems;
 
 public class SpawnOnTap : MonoBehaviour
 {
-    [Header("AR")]
-    public ARRaycastManager raycastManager;
+    [Header("AR")] public ARRaycastManager raycastManager;
 
-    [Header("Prefabs")]
-    public GameObject catPrefab;
+    [Header("Prefabs")] public GameObject catPrefab;
     public GameObject toyPrefab;
     public GameObject foodPrefab;
 
@@ -27,18 +25,13 @@ public class SpawnOnTap : MonoBehaviour
             raycastManager = FindFirstObjectByType<ARRaycastManager>();
     }
 
-    // -------------------------------
-    // Publice Button-Methoden
-    // -------------------------------
-
     public void SpawnCat()
     {
         if (spawnedCat != null)
         {
             Debug.Log("Katze existiert schon.");
-            // Auf bestehendes Ziel schalten (Food bevorzugt)
-            if (spawnedFood != null)      SwitchCatFollowToFood();
-            else if (spawnedToy != null)  SwitchCatFollowToToy();
+            if (spawnedFood != null) SwitchCatFollowToFood();
+            else if (spawnedToy != null) SwitchCatFollowToToy();
             return;
         }
 
@@ -47,7 +40,6 @@ public class SpawnOnTap : MonoBehaviour
 
     public void SpawnFood()
     {
-        // Exklusivität: erst Toy entfernen
         if (spawnedToy != null)
         {
             Destroy(spawnedToy);
@@ -67,7 +59,6 @@ public class SpawnOnTap : MonoBehaviour
 
     public void SpawnToy()
     {
-        // Exklusivität: erst Food entfernen
         if (spawnedFood != null)
         {
             Destroy(spawnedFood);
@@ -96,12 +87,16 @@ public class SpawnOnTap : MonoBehaviour
         Transform cam = Camera.main.transform;
 
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
-        var followToy  = spawnedCat.GetComponent<CatFollowToy>();
+        var followToy = spawnedCat.GetComponent<CatFollowToy>();
 
-        // Nur EIN Follow aktiv nutzen – hier Food bevorzugt
         if (followFood != null)
         {
-            if (followToy != null) { TryClear(followToy); followToy.enabled = false; }
+            if (followToy != null)
+            {
+                TryClear(followToy);
+                followToy.enabled = false;
+            }
+
             followFood.enabled = true;
             followFood.CallCatTo(cam);
         }
@@ -111,16 +106,12 @@ public class SpawnOnTap : MonoBehaviour
             followToy.CallCatTo(cam);
         }
 
-        // Optional: Wander/Idle deaktivieren
         var wander = spawnedCat.GetComponent<CatMovement>();
         if (wander) wander.enabled = false;
 
         Debug.Log("Katze wird zur Kamera gerufen.");
     }
 
-    // -------------------------------
-    // Interne Helfer
-    // -------------------------------
 
     private void SpawnObject(GameObject prefab, bool isToy)
     {
@@ -141,6 +132,8 @@ public class SpawnOnTap : MonoBehaviour
         Pose pose = hits[0].pose;
         GameObject newObj = Instantiate(prefab, pose.position, pose.rotation);
 
+        float halfHeight = GetHalfHeight(newObj);
+        newObj.transform.position = pose.position + pose.up * halfHeight;
         if (isToy)
         {
             spawnedToy = newObj;
@@ -148,14 +141,12 @@ public class SpawnOnTap : MonoBehaviour
             return;
         }
 
-        // Nicht-Toy: kann Cat oder Food sein
         if (prefab == catPrefab)
         {
             spawnedCat = newObj;
 
-            // Direkt auf existierendes Ziel schalten (Food bevorzugt)
-            if (spawnedFood != null)      SwitchCatFollowToFood();
-            else if (spawnedToy != null)  SwitchCatFollowToToy();
+            if (spawnedFood != null) SwitchCatFollowToFood();
+            else if (spawnedToy != null) SwitchCatFollowToToy();
         }
         else if (prefab == foodPrefab)
         {
@@ -169,9 +160,8 @@ public class SpawnOnTap : MonoBehaviour
         if (spawnedCat == null || spawnedFood == null) return;
 
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
-        var followToy  = spawnedCat.GetComponent<CatFollowToy>();
+        var followToy = spawnedCat.GetComponent<CatFollowToy>();
 
-        // Toy-Follow sauber deaktivieren
         if (followToy != null)
         {
             TryClear(followToy);
@@ -184,7 +174,6 @@ public class SpawnOnTap : MonoBehaviour
             followFood.SetTarget(spawnedFood.transform);
         }
 
-        // Wander aus
         var wander = spawnedCat.GetComponent<CatMovement>();
         if (wander) wander.enabled = false;
     }
@@ -194,7 +183,7 @@ public class SpawnOnTap : MonoBehaviour
         if (spawnedCat == null || spawnedToy == null) return;
 
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
-        var followToy  = spawnedCat.GetComponent<CatFollowToy>();
+        var followToy = spawnedCat.GetComponent<CatFollowToy>();
 
         if (followFood != null)
         {
@@ -214,9 +203,18 @@ public class SpawnOnTap : MonoBehaviour
 
     private void TryClear(object follow)
     {
-        // Erwartet, dass CatFollowFood/Toy eine ClearTarget()-Methode besitzen
-        // (siehe vorherige Nachricht).
         var m = follow.GetType().GetMethod("ClearTarget");
         if (m != null) m.Invoke(follow, null);
+    }
+
+    private float GetHalfHeight(GameObject go)
+    {
+        var rend = go.GetComponentInChildren<Renderer>();
+        if (rend != null) return rend.bounds.extents.y;
+
+        var col = go.GetComponentInChildren<Collider>();
+        if (col != null) return col.bounds.extents.y;
+
+        return 0.05f;
     }
 }
