@@ -239,6 +239,7 @@ GameObject:
   - component: {fileID: 5619985934887145615}
   - component: {fileID: 8578100800823467108}
   - component: {fileID: 6133402229695496089}
+  - component: {fileID: 6284472237337815712}
   m_Layer: 0
   m_Name: cat
   m_TagString: Untagged
@@ -300,6 +301,8 @@ MonoBehaviour:
   target: {fileID: 0}
   moveSpeed: 0.5
   rotationSpeed: 5
+  startWalkDistance: 0.35
+  stopDistance: 0.2
 --- !u!114 &6133402229695496089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -316,6 +319,23 @@ MonoBehaviour:
   waitTime: 1
   moveRange: 1.5
   rotationSpeed: 5
+--- !u!114 &6284472237337815712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1526554761915109350}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 791ab899235d16745b158a9665673a8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CatFollowFood
+  target: {fileID: 0}
+  moveSpeed: 0.5
+  rotationSpeed: 5
+  startWalkDistance: 0.35
+  stopDistance: 0.2
 --- !u!1 &1921977085086819228
 GameObject:
   m_ObjectHideFlags: 0

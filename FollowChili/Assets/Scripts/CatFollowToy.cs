@@ -6,8 +6,8 @@ public class CatFollowToy : MonoBehaviour
     public float moveSpeed = 0.5f;
     public float rotationSpeed = 5f;
 
-    public float startWalkDistance = 0.35f; 
-    public float stopDistance      = 0.20f; 
+    public float startWalkDistance = 0.35f;
+    public float stopDistance = 0.20f;
 
     private Animator animator;
     private bool isWalkingAnim = false;
@@ -22,7 +22,7 @@ public class CatFollowToy : MonoBehaviour
     public void SetTarget(Transform newTarget)
     {
         target = newTarget;
-        hasPlayedSit = false; 
+        hasPlayedSit = false;
     }
 
     void Update()
@@ -42,7 +42,6 @@ public class CatFollowToy : MonoBehaviour
 
         if (shouldWalk)
         {
-      
             transform.position += toTarget.normalized * moveSpeed * Time.deltaTime;
 
             if (toTarget.sqrMagnitude > 0.0001f)
@@ -74,13 +73,21 @@ public class CatFollowToy : MonoBehaviour
     bool HasParam(Animator anim, string name)
     {
         foreach (var p in anim.parameters)
-            if (p.name == name) return true;
+            if (p.name == name)
+                return true;
         return false;
     }
+
     public void CallCatTo(Transform callTarget)
     {
         target = callTarget;
         hasPlayedSit = false;
     }
 
+    public void ClearTarget()
+    {
+        target = null;
+        hasPlayedSit = false;
+        SetWalking(false);
+    }
 }
