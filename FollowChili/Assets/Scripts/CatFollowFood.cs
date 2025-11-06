@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class CatFollowToy : MonoBehaviour
+public class CatFollowFood : MonoBehaviour
 {
     public Transform target;
     public float moveSpeed = 0.5f;

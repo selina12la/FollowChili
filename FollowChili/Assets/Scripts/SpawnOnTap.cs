@@ -9,9 +9,11 @@ public class SpawnOnTap : MonoBehaviour
 
     public GameObject catPrefab;
     public GameObject toyPrefab;
+    public GameObject foodPrefab;
 
     private GameObject spawnedCat;
     private GameObject spawnedToy;
+    private GameObject spawnedFood;
 
     static readonly List<ARRaycastHit> hits = new List<ARRaycastHit>();
 
@@ -38,6 +40,25 @@ public class SpawnOnTap : MonoBehaviour
         }
 
         SpawnObject(catPrefab, false);
+    }
+
+    public void SpawnFood()
+    {
+        if (spawnedFood != null)
+        {
+            Debug.Log("Food existiert schon.");
+
+            if (spawnedCat != null)
+            {
+                var followScript = spawnedCat.GetComponent<CatFollowFood>();
+                if (followScript != null)
+                    followScript.SetTarget(spawnedFood.transform);
+            }
+
+            return;
+        }
+
+        SpawnObject(foodPrefab, false);
     }
 
     public void SpawnToy()
@@ -72,7 +93,6 @@ public class SpawnOnTap : MonoBehaviour
         if (raycastManager.Raycast(screenCenter, hits, TrackableType.PlaneWithinPolygon))
         {
             Pose pose = hits[0].pose;
-
             GameObject newObj = Instantiate(prefab, pose.position, pose.rotation);
 
             if (isToy)
@@ -81,20 +101,40 @@ public class SpawnOnTap : MonoBehaviour
 
                 if (spawnedCat != null)
                 {
-                    var followScript = spawnedCat.GetComponent<CatFollowToy>();
-                    if (followScript != null)
-                        followScript.SetTarget(spawnedToy.transform);
+                    var followToy = spawnedCat.GetComponent<CatFollowToy>();
+                    if (followToy != null)
+                        followToy.SetTarget(spawnedToy.transform);
                 }
             }
             else
             {
-                spawnedCat = newObj;
-
-                if (spawnedToy != null)
+                if (prefab == catPrefab)
                 {
-                    var followScript = spawnedCat.GetComponent<CatFollowToy>();
-                    if (followScript != null)
-                        followScript.SetTarget(spawnedToy.transform);
+                    spawnedCat = newObj;
+
+                    if (spawnedFood != null)
+                    {
+                        var followFood = spawnedCat.GetComponent<CatFollowFood>();
+                        if (followFood != null)
+                            followFood.SetTarget(spawnedFood.transform);
+                    }
+                    else if (spawnedToy != null)
+                    {
+                        var followToy = spawnedCat.GetComponent<CatFollowToy>();
+                        if (followToy != null)
+                            followToy.SetTarget(spawnedToy.transform);
+                    }
+                }
+                else if (prefab == foodPrefab)
+                {
+                    spawnedFood = newObj;
+
+                    if (spawnedCat != null)
+                    {
+                        var followFood = spawnedCat.GetComponent<CatFollowFood>();
+                        if (followFood != null)
+                            followFood.SetTarget(spawnedFood.transform);
+                    }
                 }
             }
         }
@@ -102,5 +142,29 @@ public class SpawnOnTap : MonoBehaviour
         {
             Debug.LogWarning("Kein Plane-Hit gefunden!");
         }
+
+       
+    }
+    public void CallCat()
+    {
+        if (spawnedCat == null)
+        {
+            Debug.Log("Keine Katze gespawnt.");
+            return;
+        }
+
+        // Kamera-Transform
+        Transform cam = Camera.main.transform;
+
+        // Versuche zuerst Food-Follow, sonst Toy-Follow
+        var followFood = spawnedCat.GetComponent<CatFollowFood>();
+        var followToy = spawnedCat.GetComponent<CatFollowToy>();
+
+        if (followFood != null)
+            followFood.CallCatTo(cam);
+        if (followToy != null)
+            followToy.CallCatTo(cam);
+
+        Debug.Log("Katze wird zur Kamera gerufen.");
     }
 }
