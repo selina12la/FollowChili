@@ -1,0 +1,5 @@
+C:/Users/mrick/Documents/GitHub/FollowChili/FollowChili/.utmp/RelWithDebInfo/19auq4e6/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/mrick/Documents/GitHub/FollowChili/FollowChili/.utmp/RelWithDebInfo/19auq4e6/arm64-v8a/CMakeFiles/rebuild_cache.dir
+C:/Users/mrick/Documents/GitHub/FollowChili/FollowChili/.utmp/RelWithDebInfo/19auq4e6/arm64-v8a/GameActivity/CMakeFiles/game.dir
+C:/Users/mrick/Documents/GitHub/FollowChili/FollowChili/.utmp/RelWithDebInfo/19auq4e6/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+C:/Users/mrick/Documents/GitHub/FollowChili/FollowChili/.utmp/RelWithDebInfo/19auq4e6/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir
