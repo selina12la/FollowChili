@@ -6,11 +6,9 @@ using UnityEngine.XR.ARSubsystems;
 
 public class SpawnOnTap : MonoBehaviour
 {
-    [Header("AR")]
-    public ARRaycastManager raycastManager;
+    [Header("AR")] public ARRaycastManager raycastManager;
 
-    [Header("Prefabs")]
-    public GameObject catPrefab;
+    [Header("Prefabs")] public GameObject catPrefab;
     public GameObject toyPrefab;
     public GameObject foodPrefab;
 
@@ -22,8 +20,7 @@ public class SpawnOnTap : MonoBehaviour
     // Raycast Cache
     static readonly List<ARRaycastHit> hits = new List<ARRaycastHit>();
 
-    [Header("Fetch / Bring back")]
-    public float catPickupDistance = 0.25f;
+    [Header("Fetch / Bring back")] public float catPickupDistance = 0.25f;
     public float catDropDistance = 0.25f;
     public float toyDropForward = 0.45f;
     private Coroutine fetchRoutine;
@@ -41,7 +38,7 @@ public class SpawnOnTap : MonoBehaviour
     public void SpawnCat()
     {
         Debug.Log("SpawnCat Button gedrückt");
-        
+
         if (spawnedCat != null)
         {
             Debug.Log("Katze existiert schon.");
@@ -56,7 +53,7 @@ public class SpawnOnTap : MonoBehaviour
     public void SpawnFood()
     {
         Debug.Log("SpawnFood Button gedrückt");
-        
+
         // Exklusivität: Toy zuerst entfernen
         if (spawnedToy)
         {
@@ -78,7 +75,7 @@ public class SpawnOnTap : MonoBehaviour
     public void SpawnToy()
     {
         Debug.Log("SpawnToy Button gedrückt");
-        
+
         // Exklusivität: Food zuerst entfernen
         if (spawnedFood)
         {
@@ -100,7 +97,7 @@ public class SpawnOnTap : MonoBehaviour
     public void CallCat()
     {
         Debug.Log($"CallCat aufgerufen - spawnedCat: {spawnedCat != null}");
-        
+
         if (!spawnedCat)
         {
             Debug.Log("Keine Katze gespawnt.");
@@ -108,20 +105,21 @@ public class SpawnOnTap : MonoBehaviour
         }
 
         Transform cam = Camera.main.transform;
-        
+
         // Sicherstellen dass die Katze die benötigten Komponenten hat
         EnsureCatComponents(spawnedCat);
-        
+
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
         var followToy = spawnedCat.GetComponent<CatFollowToy>();
 
         // Beide deaktivieren zuerst
-        if (followFood) 
+        if (followFood)
         {
             followFood.enabled = false;
             followFood.ClearTarget();
         }
-        if (followToy) 
+
+        if (followToy)
         {
             followToy.enabled = false;
             followToy.ClearTarget();
@@ -167,30 +165,21 @@ public class SpawnOnTap : MonoBehaviour
         }
 
         Pose pose = hits[0].pose;
-        
-        // Bessere Positionierung
-        Vector3 spawnPosition = pose.position;
-        float heightOffset = GetHalfHeight(prefab);
-        spawnPosition.y += heightOffset;
-        
-        GameObject newObj = Instantiate(prefab, spawnPosition, pose.rotation);
 
-        // Höhe/Pivot ausgleichen (damit nichts im Boden steckt)
-        float actualHeight = GetHalfHeight(newObj);
-        newObj.transform.position = spawnPosition + Vector3.up * actualHeight;
+        // Direkt auf Boden setzen, aber Modell-Höhe korrigieren, falls Pivot nicht passt
+        GameObject newObj = Instantiate(prefab, pose.position, pose.rotation);
 
+        // Nur eine EINZIGE Höhenkorrektur
+        float offset = GetPivotCorrection(newObj);
+        newObj.transform.position += Vector3.up * offset;
+
+        // Rest bleibt wie bei dir...
         if (isToy)
         {
             if (spawnedToy) Destroy(spawnedToy);
             spawnedToy = newObj;
             Debug.Log($"Toy gespawnt: {spawnedToy.name}");
-
-            if (spawnedCat) 
-            {
-                Debug.Log("Toy gespawnt - aktiviere FollowToy");
-                SwitchCatFollowToToy();
-            }
-
+            if (spawnedCat) SwitchCatFollowToToy();
             if (fetchRoutine != null) StopCoroutine(fetchRoutine);
             fetchRoutine = StartCoroutine(FetchMonitorRoutine());
             return;
@@ -199,34 +188,17 @@ public class SpawnOnTap : MonoBehaviour
         if (prefab == catPrefab)
         {
             spawnedCat = newObj;
-            Debug.Log($"Katze gespawnt: {spawnedCat.name}");
-
-            // Sicherstellen dass Katze Komponenten hat
             EnsureCatComponents(spawnedCat);
-
-            if (spawnedFood) 
-            {
-                Debug.Log("Katze gespawnt - aktiviere FollowFood");
-                SwitchCatFollowToFood();
-            }
-            else if (spawnedToy) 
-            {
-                Debug.Log("Katze gespawnt - aktiviere FollowToy");
-                SwitchCatFollowToToy();
-            }
+            if (spawnedFood) SwitchCatFollowToFood();
+            else if (spawnedToy) SwitchCatFollowToToy();
         }
         else if (prefab == foodPrefab)
         {
             spawnedFood = newObj;
-            Debug.Log($"Food gespawnt: {spawnedFood.name}");
-            
-            if (spawnedCat) 
-            {
-                Debug.Log("Food gespawnt - aktiviere FollowFood");
-                SwitchCatFollowToFood();
-            }
+            if (spawnedCat) SwitchCatFollowToFood();
         }
     }
+
 
     // -------------------------------
     // Follow-Umschalter (exklusiv)
@@ -235,8 +207,8 @@ public class SpawnOnTap : MonoBehaviour
     private void SwitchCatFollowToFood()
     {
         Debug.Log($"SwitchCatFollowToFood - Katze: {spawnedCat != null}, Food: {spawnedFood != null}");
-        
-        if (!spawnedCat || !spawnedFood) 
+
+        if (!spawnedCat || !spawnedFood)
         {
             Debug.Log($"Fehler: spawnedCat={spawnedCat != null}, spawnedFood={spawnedFood != null}");
             return;
@@ -270,8 +242,8 @@ public class SpawnOnTap : MonoBehaviour
     private void SwitchCatFollowToToy()
     {
         Debug.Log($"SwitchCatFollowToToy - Katze: {spawnedCat != null}, Toy: {spawnedToy != null}");
-        
-        if (!spawnedCat || !spawnedToy) 
+
+        if (!spawnedCat || !spawnedToy)
         {
             Debug.Log($"Fehler: spawnedCat={spawnedCat != null}, spawnedToy={spawnedToy != null}");
             return;
@@ -308,7 +280,7 @@ public class SpawnOnTap : MonoBehaviour
 
     private IEnumerator FetchMonitorRoutine()
     {
-        if (!spawnedCat || !spawnedToy) 
+        if (!spawnedCat || !spawnedToy)
         {
             Debug.Log("FetchMonitor: Katze oder Toy fehlt");
             yield break;
@@ -319,7 +291,7 @@ public class SpawnOnTap : MonoBehaviour
 
         // HoldPoint suchen (optional)
         Transform holdPoint = spawnedCat.transform.Find("HoldPoint");
-        if (!holdPoint) 
+        if (!holdPoint)
         {
             holdPoint = spawnedCat.transform;
             Debug.Log("Kein HoldPoint gefunden, verwende Katzen-Transform");
@@ -335,7 +307,7 @@ public class SpawnOnTap : MonoBehaviour
             // 1) Aufheben
             if (!pickedUp && d <= catPickupDistance)
             {
-                spawnedToy.transform.SetParent(holdPoint, worldPositionStays:false);
+                spawnedToy.transform.SetParent(holdPoint, worldPositionStays: false);
                 spawnedToy.transform.localPosition = Vector3.zero;
                 spawnedToy.transform.localRotation = Quaternion.identity;
                 pickedUp = true;
@@ -344,7 +316,7 @@ public class SpawnOnTap : MonoBehaviour
                 // Jetzt zur Kamera laufen
                 Transform cam = Camera.main.transform;
                 var followToy = spawnedCat.GetComponent<CatFollowToy>();
-                if (followToy) 
+                if (followToy)
                 {
                     followToy.CallCatTo(cam);
                     Debug.Log("Katze zur Kamera gerufen");
@@ -360,7 +332,7 @@ public class SpawnOnTap : MonoBehaviour
 
                 if (dToCam <= catDropDistance)
                 {
-                    spawnedToy.transform.SetParent(null, worldPositionStays:true);
+                    spawnedToy.transform.SetParent(null, worldPositionStays: true);
                     Vector3 dropPos = cam.position + cam.forward * toyDropForward;
 
                     // auf AR-Ebene ablegen
@@ -370,15 +342,15 @@ public class SpawnOnTap : MonoBehaviour
 
                     // Follow wieder aufheben/idle
                     var followToy = spawnedCat.GetComponent<CatFollowToy>();
-                    if (followToy) 
-                    { 
-                        followToy.ClearTarget(); 
-                        followToy.enabled = false; 
+                    if (followToy)
+                    {
+                        followToy.ClearTarget();
+                        followToy.enabled = false;
                         Debug.Log("FollowToy deaktiviert nach Ablegen");
                     }
 
                     var wander = spawnedCat.GetComponent<CatMovement>();
-                    if (wander) 
+                    if (wander)
                     {
                         wander.enabled = true;
                         Debug.Log("Wander aktiviert");
@@ -391,7 +363,7 @@ public class SpawnOnTap : MonoBehaviour
 
             yield return new WaitForSeconds(0.1f); // Etwas weniger frequent updaten
         }
-        
+
         Debug.Log("FetchMonitor beendet");
     }
 
@@ -407,13 +379,13 @@ public class SpawnOnTap : MonoBehaviour
             cat.AddComponent<CatFollowFood>();
             Debug.Log("CatFollowFood Component hinzugefügt");
         }
-        
+
         if (!cat.GetComponent<CatFollowToy>())
         {
             cat.AddComponent<CatFollowToy>();
             Debug.Log("CatFollowToy Component hinzugefügt");
         }
-        
+
         // Animator sicherstellen
         if (!cat.GetComponent<Animator>())
         {
@@ -424,19 +396,32 @@ public class SpawnOnTap : MonoBehaviour
     private float GetHalfHeight(GameObject go)
     {
         var rend = go.GetComponentInChildren<Renderer>();
-        if (rend) 
+        if (rend)
         {
             rend.enabled = true; // Force bounds update
             return rend.bounds.extents.y;
         }
 
         var col = go.GetComponentInChildren<Collider>();
-        if (col) 
+        if (col)
         {
             col.enabled = true; // Force bounds update  
             return col.bounds.extents.y;
         }
 
         return 0.1f; // Fallback erhöhen
+    }
+
+    private float GetPivotCorrection(GameObject go)
+    {
+        var rend = go.GetComponentInChildren<Renderer>();
+        if (rend)
+        {
+            float pivotY = go.transform.position.y;
+            float lowestPoint = rend.bounds.min.y;
+            return pivotY - lowestPoint;
+        }
+
+        return 0f;
     }
 }

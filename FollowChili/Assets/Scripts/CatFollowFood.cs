@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class CatFollowFood : MonoBehaviour
@@ -8,6 +9,9 @@ public class CatFollowFood : MonoBehaviour
 
     public float startWalkDistance = 0.35f;
     public float stopDistance = 0.20f;
+
+    public float eatDuration = 1.0f; 
+    private bool isConsuming = false;
 
     private Animator animator;
     private bool isWalkingAnim = false;
@@ -23,10 +27,14 @@ public class CatFollowFood : MonoBehaviour
     {
         target = newTarget;
         hasPlayedSit = false;
+        isConsuming = false;
     }
 
     void Update()
     {
+        if (isConsuming)
+            return; 
+
         if (target == null)
         {
             SetWalking(false);
@@ -52,6 +60,12 @@ public class CatFollowFood : MonoBehaviour
         }
         else
         {
+            if (dist <= stopDistance + 0.01f)
+            {
+                StartCoroutine(ConsumeFood());
+                return;
+            }
+            
             if (!hasPlayedSit && animator != null)
             {
                 if (HasParam(animator, "sitOnce"))
@@ -59,6 +73,25 @@ public class CatFollowFood : MonoBehaviour
                 hasPlayedSit = true;
             }
         }
+    }
+
+    private IEnumerator ConsumeFood()
+    {
+        isConsuming = true;
+        SetWalking(false);
+
+        yield return new WaitForSeconds(eatDuration);
+
+        if (target != null)
+        {
+            GameObject foodObj = target.gameObject;
+            target = null;
+            if (foodObj != null)
+                Destroy(foodObj);
+        }
+
+        hasPlayedSit = false;
+        isConsuming = false;
     }
 
     void SetWalking(bool walk)
@@ -82,12 +115,14 @@ public class CatFollowFood : MonoBehaviour
     {
         target = callTarget;
         hasPlayedSit = false;
+        isConsuming = false;
     }
 
     public void ClearTarget()
     {
         target = null;
         hasPlayedSit = false;
+        isConsuming = false;
         SetWalking(false);
     }
 }
