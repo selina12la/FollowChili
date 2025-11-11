@@ -11,7 +11,6 @@ public class CatFollowToy : MonoBehaviour
 
     private Animator animator;
     private bool isWalkingAnim = false;
-    private bool hasPlayedSit = false;
 
     void Start()
     {
@@ -22,7 +21,6 @@ public class CatFollowToy : MonoBehaviour
     public void SetTarget(Transform newTarget)
     {
         target = newTarget;
-        hasPlayedSit = false;
     }
 
     void Update()
@@ -50,15 +48,6 @@ public class CatFollowToy : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, look, rotationSpeed * Time.deltaTime);
             }
         }
-        else
-        {
-            if (!hasPlayedSit && animator != null)
-            {
-                if (HasParam(animator, "sitOnce"))
-                    animator.SetTrigger("sitOnce");
-                hasPlayedSit = true;
-            }
-        }
     }
 
     void SetWalking(bool walk)
@@ -70,24 +59,14 @@ public class CatFollowToy : MonoBehaviour
         }
     }
 
-    bool HasParam(Animator anim, string name)
-    {
-        foreach (var p in anim.parameters)
-            if (p.name == name)
-                return true;
-        return false;
-    }
-
     public void CallCatTo(Transform callTarget)
     {
         target = callTarget;
-        hasPlayedSit = false;
     }
 
     public void ClearTarget()
     {
         target = null;
-        hasPlayedSit = false;
         SetWalking(false);
     }
 }

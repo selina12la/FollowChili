@@ -10,12 +10,12 @@ public class CatFollowFood : MonoBehaviour
     public float startWalkDistance = 0.35f;
     public float stopDistance = 0.20f;
 
+    [Header("Eating")]
     public float eatDuration = 1.0f; 
     private bool isConsuming = false;
 
     private Animator animator;
     private bool isWalkingAnim = false;
-    private bool hasPlayedSit = false;
 
     void Start()
     {
@@ -26,14 +26,12 @@ public class CatFollowFood : MonoBehaviour
     public void SetTarget(Transform newTarget)
     {
         target = newTarget;
-        hasPlayedSit = false;
         isConsuming = false;
     }
 
     void Update()
     {
-        if (isConsuming)
-            return; 
+        if (isConsuming) return;
 
         if (target == null)
         {
@@ -63,14 +61,6 @@ public class CatFollowFood : MonoBehaviour
             if (dist <= stopDistance + 0.01f)
             {
                 StartCoroutine(ConsumeFood());
-                return;
-            }
-            
-            if (!hasPlayedSit && animator != null)
-            {
-                if (HasParam(animator, "sitOnce"))
-                    animator.SetTrigger("sitOnce");
-                hasPlayedSit = true;
             }
         }
     }
@@ -84,13 +74,14 @@ public class CatFollowFood : MonoBehaviour
 
         if (target != null)
         {
-            GameObject foodObj = target.gameObject;
+            var foodObj = target.gameObject;
             target = null;
-            if (foodObj != null)
-                Destroy(foodObj);
+            if (foodObj != null) Destroy(foodObj);
         }
 
-        hasPlayedSit = false;
+        var wander = GetComponent<CatMovement>();
+        if (wander) { wander.enabled = true; wander.RestartAfterDelay(); }
+
         isConsuming = false;
     }
 
@@ -103,25 +94,15 @@ public class CatFollowFood : MonoBehaviour
         }
     }
 
-    bool HasParam(Animator anim, string name)
-    {
-        foreach (var p in anim.parameters)
-            if (p.name == name)
-                return true;
-        return false;
-    }
-
     public void CallCatTo(Transform callTarget)
     {
         target = callTarget;
-        hasPlayedSit = false;
         isConsuming = false;
     }
 
     public void ClearTarget()
     {
         target = null;
-        hasPlayedSit = false;
         isConsuming = false;
         SetWalking(false);
     }

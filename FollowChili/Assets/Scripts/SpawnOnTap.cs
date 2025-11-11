@@ -12,18 +12,18 @@ public class SpawnOnTap : MonoBehaviour
     public GameObject toyPrefab;
     public GameObject foodPrefab;
 
-    // Aktive Instanzen
     private GameObject spawnedCat;
     private GameObject spawnedToy;
     private GameObject spawnedFood;
 
-    // Raycast Cache
     static readonly List<ARRaycastHit> hits = new List<ARRaycastHit>();
 
-    [Header("Fetch / Bring back")] public float catPickupDistance = 0.25f;
+    [Header("Toy / Return")] public float catPickupDistance = 0.25f;
     public float catDropDistance = 0.25f;
     public float toyDropForward = 0.45f;
-    private Coroutine fetchRoutine;
+
+    private Coroutine pickupRoutine;
+    private Coroutine returnWithToyRoutine;
 
     void Start()
     {
@@ -31,19 +31,13 @@ public class SpawnOnTap : MonoBehaviour
             raycastManager = FindFirstObjectByType<ARRaycastManager>();
     }
 
-    // -------------------------------
-    // Buttons
-    // -------------------------------
-
     public void SpawnCat()
     {
-        Debug.Log("SpawnCat Button gedrückt");
-
         if (spawnedCat != null)
         {
-            Debug.Log("Katze existiert schon.");
             if (spawnedFood) SwitchCatFollowToFood();
             else if (spawnedToy) SwitchCatFollowToToy();
+            else EnableWander();
             return;
         }
 
@@ -52,20 +46,20 @@ public class SpawnOnTap : MonoBehaviour
 
     public void SpawnFood()
     {
-        Debug.Log("SpawnFood Button gedrückt");
-
-        // Exklusivität: Toy zuerst entfernen
         if (spawnedToy)
         {
             Destroy(spawnedToy);
             spawnedToy = null;
         }
 
-        if (spawnedFood)
+        if (spawnedFood != null)
         {
-            Debug.Log("Food existiert schon.");
-            if (spawnedCat) SwitchCatFollowToFood();
-            return;
+            if (spawnedFood == null) spawnedFood = null;
+            else
+            {
+                if (spawnedCat) SwitchCatFollowToFood();
+                return;
+            }
         }
 
         SpawnObject(foodPrefab, isToy: false);
@@ -74,20 +68,20 @@ public class SpawnOnTap : MonoBehaviour
 
     public void SpawnToy()
     {
-        Debug.Log("SpawnToy Button gedrückt");
-
-        // Exklusivität: Food zuerst entfernen
         if (spawnedFood)
         {
             Destroy(spawnedFood);
             spawnedFood = null;
         }
 
-        if (spawnedToy)
+        if (spawnedToy != null)
         {
-            Debug.Log("Toy existiert schon.");
-            if (spawnedCat) SwitchCatFollowToToy();
-            return;
+            if (spawnedToy == null) spawnedToy = null;
+            else
+            {
+                if (spawnedCat) SwitchCatFollowToToy();
+                return;
+            }
         }
 
         SpawnObject(toyPrefab, isToy: true);
@@ -96,101 +90,74 @@ public class SpawnOnTap : MonoBehaviour
 
     public void CallCat()
     {
-        Debug.Log($"CallCat aufgerufen - spawnedCat: {spawnedCat != null}");
+        if (!spawnedCat) return;
 
-        if (!spawnedCat)
+        if (IsCatHoldingToy())
         {
-            Debug.Log("Keine Katze gespawnt.");
+            if (returnWithToyRoutine != null) StopCoroutine(returnWithToyRoutine);
+            returnWithToyRoutine = StartCoroutine(ReturnToyToCameraRoutine());
             return;
         }
 
         Transform cam = Camera.main.transform;
-
-        // Sicherstellen dass die Katze die benötigten Komponenten hat
         EnsureCatComponents(spawnedCat);
 
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
         var followToy = spawnedCat.GetComponent<CatFollowToy>();
+        var wander = spawnedCat.GetComponent<CatMovement>();
 
-        // Beide deaktivieren zuerst
-        if (followFood)
-        {
-            followFood.enabled = false;
-            followFood.ClearTarget();
-        }
+        if (wander) wander.enabled = false;
 
-        if (followToy)
-        {
-            followToy.enabled = false;
-            followToy.ClearTarget();
-        }
-
-        // Eines aktivieren für Call
         if (followFood)
         {
             followFood.enabled = true;
             followFood.CallCatTo(cam);
-            Debug.Log("Katze folgt Food Target zur Kamera");
         }
         else if (followToy)
         {
             followToy.enabled = true;
             followToy.CallCatTo(cam);
-            Debug.Log("Katze folgt Toy Target zur Kamera");
         }
-
-        var wander = spawnedCat.GetComponent<CatMovement>();
-        if (wander) wander.enabled = false;
-
-        Debug.Log("Katze wird zur Kamera gerufen.");
     }
 
-    // -------------------------------
-    // Spawning
-    // -------------------------------
 
     private void SpawnObject(GameObject prefab, bool isToy)
     {
-        if (!prefab)
-        {
-            Debug.LogWarning("Kein Prefab referenziert!");
-            return;
-        }
+        if (!prefab) return;
 
         Vector2 screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);
         if (!raycastManager.Raycast(screenCenter, hits, TrackableType.PlaneWithinPolygon))
-        {
-            Debug.LogWarning("Kein Plane-Hit gefunden!");
             return;
-        }
 
         Pose pose = hits[0].pose;
 
-        // Direkt auf Boden setzen, aber Modell-Höhe korrigieren, falls Pivot nicht passt
         GameObject newObj = Instantiate(prefab, pose.position, pose.rotation);
 
-        // Nur eine EINZIGE Höhenkorrektur
         float offset = GetPivotCorrection(newObj);
         newObj.transform.position += Vector3.up * offset;
-
-        // Rest bleibt wie bei dir...
-        if (isToy)
-        {
-            if (spawnedToy) Destroy(spawnedToy);
-            spawnedToy = newObj;
-            Debug.Log($"Toy gespawnt: {spawnedToy.name}");
-            if (spawnedCat) SwitchCatFollowToToy();
-            if (fetchRoutine != null) StopCoroutine(fetchRoutine);
-            fetchRoutine = StartCoroutine(FetchMonitorRoutine());
-            return;
-        }
 
         if (prefab == catPrefab)
         {
             spawnedCat = newObj;
             EnsureCatComponents(spawnedCat);
+
+            EnableWander();
+
             if (spawnedFood) SwitchCatFollowToFood();
             else if (spawnedToy) SwitchCatFollowToToy();
+
+            var walk = spawnedCat.GetComponent<CatMovement>();
+            if (walk) walk.planeYOverride = pose.position.y;
+        }
+        else if (isToy)
+        {
+            if (spawnedToy) Destroy(spawnedToy);
+            spawnedToy = newObj;
+
+            if (spawnedCat) SwitchCatFollowToToy();
+
+            if (pickupRoutine != null) StopCoroutine(pickupRoutine);
+            pickupRoutine = StartCoroutine(PickupToyAndWanderRoutine());
         }
         else if (prefab == foodPrefab)
         {
@@ -199,217 +166,183 @@ public class SpawnOnTap : MonoBehaviour
         }
     }
 
-
-    // -------------------------------
-    // Follow-Umschalter (exklusiv)
-    // -------------------------------
-
     private void SwitchCatFollowToFood()
     {
-        Debug.Log($"SwitchCatFollowToFood - Katze: {spawnedCat != null}, Food: {spawnedFood != null}");
-
-        if (!spawnedCat || !spawnedFood)
-        {
-            Debug.Log($"Fehler: spawnedCat={spawnedCat != null}, spawnedFood={spawnedFood != null}");
-            return;
-        }
+        if (!spawnedCat || !spawnedFood) return;
 
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
         var followToy = spawnedCat.GetComponent<CatFollowToy>();
+        var wander = spawnedCat.GetComponent<CatMovement>();
 
         if (followToy && followToy.enabled)
         {
-            followToy.enabled = false;
             followToy.ClearTarget();
-            Debug.Log("FollowToy deaktiviert");
+            followToy.enabled = false;
         }
+
+        if (wander) wander.enabled = false;
 
         if (followFood)
         {
             followFood.enabled = true;
             followFood.SetTarget(spawnedFood.transform);
-            Debug.Log("FollowFood aktiviert mit Food Target");
         }
-        else
-        {
-            Debug.LogError("CatFollowFood Component nicht gefunden!");
-        }
-
-        var wander = spawnedCat.GetComponent<CatMovement>();
-        if (wander) wander.enabled = false;
     }
 
     private void SwitchCatFollowToToy()
     {
-        Debug.Log($"SwitchCatFollowToToy - Katze: {spawnedCat != null}, Toy: {spawnedToy != null}");
-
-        if (!spawnedCat || !spawnedToy)
-        {
-            Debug.Log($"Fehler: spawnedCat={spawnedCat != null}, spawnedToy={spawnedToy != null}");
-            return;
-        }
+        if (!spawnedCat || !spawnedToy) return;
 
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
         var followToy = spawnedCat.GetComponent<CatFollowToy>();
+        var wander = spawnedCat.GetComponent<CatMovement>();
 
         if (followFood && followFood.enabled)
         {
-            followFood.enabled = false;
             followFood.ClearTarget();
-            Debug.Log("FollowFood deaktiviert");
+            followFood.enabled = false;
         }
+
+        if (wander) wander.enabled = false;
 
         if (followToy)
         {
             followToy.enabled = true;
             followToy.SetTarget(spawnedToy.transform);
-            Debug.Log("FollowToy aktiviert mit Toy Target");
         }
-        else
-        {
-            Debug.LogError("CatFollowToy Component nicht gefunden!");
-        }
-
-        var wander = spawnedCat.GetComponent<CatMovement>();
-        if (wander) wander.enabled = false;
     }
 
-    // -------------------------------
-    // Toy-Interaktion & Fetch
-    // -------------------------------
-
-    private IEnumerator FetchMonitorRoutine()
+    private void EnableWander()
     {
-        if (!spawnedCat || !spawnedToy)
+        if (!spawnedCat) return;
+
+        var followFood = spawnedCat.GetComponent<CatFollowFood>();
+        var followToy = spawnedCat.GetComponent<CatFollowToy>();
+        var wander = spawnedCat.GetComponent<CatMovement>();
+
+        if (followFood)
         {
-            Debug.Log("FetchMonitor: Katze oder Toy fehlt");
-            yield break;
+            followFood.ClearTarget();
+            followFood.enabled = false;
         }
+
+        if (followToy)
+        {
+            followToy.ClearTarget();
+            followToy.enabled = false;
+        }
+
+        if (wander)
+        {
+            wander.enabled = true;
+            wander.RestartAfterDelay();
+        }
+    }
+
+    private IEnumerator PickupToyAndWanderRoutine()
+    {
+        if (!spawnedCat || !spawnedToy) yield break;
 
         var cat = spawnedCat.transform;
         bool pickedUp = false;
 
-        // HoldPoint suchen (optional)
         Transform holdPoint = spawnedCat.transform.Find("HoldPoint");
-        if (!holdPoint)
-        {
-            holdPoint = spawnedCat.transform;
-            Debug.Log("Kein HoldPoint gefunden, verwende Katzen-Transform");
-        }
-
-        Debug.Log("FetchMonitor gestartet");
+        if (!holdPoint) holdPoint = spawnedCat.transform;
 
         while (spawnedCat && spawnedToy)
         {
             float d = Vector3.Distance(cat.position, spawnedToy.transform.position);
-            Debug.Log($"Distanz Katze-Toy: {d}");
 
-            // 1) Aufheben
             if (!pickedUp && d <= catPickupDistance)
             {
                 spawnedToy.transform.SetParent(holdPoint, worldPositionStays: false);
                 spawnedToy.transform.localPosition = Vector3.zero;
                 spawnedToy.transform.localRotation = Quaternion.identity;
                 pickedUp = true;
-                Debug.Log("Toy aufgehoben");
-
-                // Jetzt zur Kamera laufen
-                Transform cam = Camera.main.transform;
                 var followToy = spawnedCat.GetComponent<CatFollowToy>();
                 if (followToy)
                 {
-                    followToy.CallCatTo(cam);
-                    Debug.Log("Katze zur Kamera gerufen");
+                    followToy.ClearTarget();
+                    followToy.enabled = false;
                 }
-            }
 
-            // 2) Vor Kamera ablegen
-            if (pickedUp)
-            {
-                Transform cam = Camera.main.transform;
-                float dToCam = Vector3.Distance(cat.position, cam.position);
-                Debug.Log($"Distanz Katze-Kamera: {dToCam}");
-
-                if (dToCam <= catDropDistance)
+                var wander = spawnedCat.GetComponent<CatMovement>();
+                if (wander)
                 {
-                    spawnedToy.transform.SetParent(null, worldPositionStays: true);
-                    Vector3 dropPos = cam.position + cam.forward * toyDropForward;
-
-                    // auf AR-Ebene ablegen
-                    spawnedToy.transform.position = dropPos;
-                    spawnedToy.transform.rotation = Quaternion.LookRotation(
-                        Vector3.ProjectOnPlane(cam.forward, Vector3.up), Vector3.up);
-
-                    // Follow wieder aufheben/idle
-                    var followToy = spawnedCat.GetComponent<CatFollowToy>();
-                    if (followToy)
-                    {
-                        followToy.ClearTarget();
-                        followToy.enabled = false;
-                        Debug.Log("FollowToy deaktiviert nach Ablegen");
-                    }
-
-                    var wander = spawnedCat.GetComponent<CatMovement>();
-                    if (wander)
-                    {
-                        wander.enabled = true;
-                        Debug.Log("Wander aktiviert");
-                    }
-
-                    Debug.Log("Toy abgelegt");
-                    yield break;
+                    wander.enabled = true;
                 }
+
+                yield break;
             }
 
-            yield return new WaitForSeconds(0.1f); // Etwas weniger frequent updaten
+            yield return null;
         }
-
-        Debug.Log("FetchMonitor beendet");
     }
 
-    // -------------------------------
-    // Utils
-    // -------------------------------
+    private IEnumerator ReturnToyToCameraRoutine()
+    {
+        if (!spawnedCat || !spawnedToy) yield break;
+
+        var followToy = spawnedCat.GetComponent<CatFollowToy>();
+        var followFood = spawnedCat.GetComponent<CatFollowFood>();
+        var wander = spawnedCat.GetComponent<CatMovement>();
+
+        if (wander) wander.enabled = false;
+        if (followFood)
+        {
+            followFood.ClearTarget();
+            followFood.enabled = false;
+        }
+
+        if (followToy) followToy.enabled = true;
+
+        Transform cam = Camera.main.transform;
+        followToy.CallCatTo(cam);
+
+        while (spawnedCat && spawnedToy)
+        {
+            float dToCam = Vector3.Distance(spawnedCat.transform.position, cam.position);
+            if (dToCam <= catDropDistance)
+            {
+                spawnedToy.transform.SetParent(null, worldPositionStays: true);
+                Vector3 dropPos = cam.position +
+                                  Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized * toyDropForward;
+                spawnedToy.transform.position = dropPos;
+                spawnedToy.transform.rotation = Quaternion.LookRotation(
+                    Vector3.ProjectOnPlane(cam.forward, Vector3.up), Vector3.up);
+
+                if (followToy)
+                {
+                    followToy.ClearTarget();
+                    followToy.enabled = false;
+                }
+
+                if (wander)
+                {
+                    wander.enabled = true;
+                    wander.RestartAfterDelay();
+                }
+
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
 
     private void EnsureCatComponents(GameObject cat)
     {
-        // Füge die Follow-Scripts hinzu, falls nicht vorhanden
-        if (!cat.GetComponent<CatFollowFood>())
-        {
-            cat.AddComponent<CatFollowFood>();
-            Debug.Log("CatFollowFood Component hinzugefügt");
-        }
-
-        if (!cat.GetComponent<CatFollowToy>())
-        {
-            cat.AddComponent<CatFollowToy>();
-            Debug.Log("CatFollowToy Component hinzugefügt");
-        }
-
-        // Animator sicherstellen
+        if (!cat.GetComponent<CatFollowFood>()) cat.AddComponent<CatFollowFood>();
+        if (!cat.GetComponent<CatFollowToy>()) cat.AddComponent<CatFollowToy>();
+        if (!cat.GetComponent<CatMovement>()) cat.AddComponent<CatMovement>();
         if (!cat.GetComponent<Animator>())
-        {
-            Debug.LogWarning("Katze Prefab hat keinen Animator!");
-        }
+            Debug.LogWarning("Katze Prefab hat keinen Animator! (isWalking Bool wird dann ignoriert)");
     }
 
-    private float GetHalfHeight(GameObject go)
+    private bool IsCatHoldingToy()
     {
-        var rend = go.GetComponentInChildren<Renderer>();
-        if (rend)
-        {
-            rend.enabled = true; // Force bounds update
-            return rend.bounds.extents.y;
-        }
-
-        var col = go.GetComponentInChildren<Collider>();
-        if (col)
-        {
-            col.enabled = true; // Force bounds update  
-            return col.bounds.extents.y;
-        }
-
-        return 0.1f; // Fallback erhöhen
+        if (!spawnedCat || !spawnedToy) return false;
+        return spawnedToy.transform.IsChildOf(spawnedCat.transform);
     }
 
     private float GetPivotCorrection(GameObject go)
@@ -417,9 +350,17 @@ public class SpawnOnTap : MonoBehaviour
         var rend = go.GetComponentInChildren<Renderer>();
         if (rend)
         {
-            float pivotY = go.transform.position.y;
             float lowestPoint = rend.bounds.min.y;
-            return pivotY - lowestPoint;
+            float currentY = go.transform.position.y;
+            return currentY - lowestPoint;
+        }
+
+        var col = go.GetComponentInChildren<Collider>();
+        if (col)
+        {
+            float lowestPoint = col.bounds.min.y;
+            float currentY = go.transform.position.y;
+            return currentY - lowestPoint;
         }
 
         return 0f;
