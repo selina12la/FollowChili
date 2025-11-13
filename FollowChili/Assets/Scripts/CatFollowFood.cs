@@ -10,8 +10,7 @@ public class CatFollowFood : MonoBehaviour
     public float startWalkDistance = 0.35f;
     public float stopDistance = 0.20f;
 
-    [Header("Eating")]
-    public float eatDuration = 1.0f; 
+    public float eatDuration = 1.0f;
     private bool isConsuming = false;
 
     private Animator animator;
@@ -80,7 +79,11 @@ public class CatFollowFood : MonoBehaviour
         }
 
         var wander = GetComponent<CatMovement>();
-        if (wander) { wander.enabled = true; wander.RestartAfterDelay(); }
+        if (wander)
+        {
+            wander.enabled = true;
+            wander.RestartAfterDelay();
+        }
 
         isConsuming = false;
     }

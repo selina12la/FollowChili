@@ -6,9 +6,11 @@ using UnityEngine.XR.ARSubsystems;
 
 public class SpawnOnTap : MonoBehaviour
 {
-    [Header("AR")] public ARRaycastManager raycastManager;
+    [Header("AR")]
+    public ARRaycastManager raycastManager;
 
-    [Header("Prefabs")] public GameObject catPrefab;
+    [Header("Prefabs")]
+    public GameObject catPrefab;
     public GameObject toyPrefab;
     public GameObject foodPrefab;
 
@@ -18,17 +20,27 @@ public class SpawnOnTap : MonoBehaviour
 
     static readonly List<ARRaycastHit> hits = new List<ARRaycastHit>();
 
-    [Header("Toy / Return")] public float catPickupDistance = 0.25f;
+    [Header("Toy / Return")]
+    public float catPickupDistance = 0.25f;
     public float catDropDistance = 0.25f;
     public float toyDropForward = 0.45f;
 
+    [Header("Call Cat")]
+    public float callCatDistance = 1.2f;
+
     private Coroutine pickupRoutine;
     private Coroutine returnWithToyRoutine;
+
+    private Transform callTargetTransform;
 
     void Start()
     {
         if (raycastManager == null)
             raycastManager = FindFirstObjectByType<ARRaycastManager>();
+
+        var go = new GameObject("CatCallTarget");
+        go.hideFlags = HideFlags.HideInHierarchy;
+        callTargetTransform = go.transform;
     }
 
     public void SpawnCat()
@@ -41,7 +53,7 @@ public class SpawnOnTap : MonoBehaviour
             return;
         }
 
-        SpawnObject(catPrefab, isToy: false);
+        SpawnObject(catPrefab, false);
     }
 
     public void SpawnFood()
@@ -62,7 +74,7 @@ public class SpawnOnTap : MonoBehaviour
             }
         }
 
-        SpawnObject(foodPrefab, isToy: false);
+        SpawnObject(foodPrefab, false);
         if (spawnedCat) SwitchCatFollowToFood();
     }
 
@@ -84,7 +96,7 @@ public class SpawnOnTap : MonoBehaviour
             }
         }
 
-        SpawnObject(toyPrefab, isToy: true);
+        SpawnObject(toyPrefab, true);
         if (spawnedCat) SwitchCatFollowToToy();
     }
 
@@ -108,18 +120,28 @@ public class SpawnOnTap : MonoBehaviour
 
         if (wander) wander.enabled = false;
 
+        Vector3 forwardFlat = Vector3.ProjectOnPlane(cam.forward, Vector3.up);
+        if (forwardFlat.sqrMagnitude < 0.0001f) forwardFlat = cam.forward;
+        forwardFlat.y = 0f;
+        forwardFlat.Normalize();
+
+        float y = spawnedCat.transform.position.y;
+        Vector3 basePos = cam.position;
+        basePos.y = y;
+        callTargetTransform.position = basePos + forwardFlat * callCatDistance;
+        callTargetTransform.rotation = Quaternion.LookRotation(-forwardFlat, Vector3.up);
+
         if (followFood)
         {
             followFood.enabled = true;
-            followFood.CallCatTo(cam);
+            followFood.CallCatTo(callTargetTransform);
         }
         else if (followToy)
         {
             followToy.enabled = true;
-            followToy.CallCatTo(cam);
+            followToy.CallCatTo(callTargetTransform);
         }
     }
-
 
     private void SpawnObject(GameObject prefab, bool isToy)
     {
@@ -154,6 +176,13 @@ public class SpawnOnTap : MonoBehaviour
             if (spawnedToy) Destroy(spawnedToy);
             spawnedToy = newObj;
 
+            var interact = spawnedToy.GetComponent<ToyInteractable>();
+            if (interact != null)
+            {
+                interact.OnReleased -= HandleToyReleased;
+                interact.OnReleased += HandleToyReleased;
+            }
+
             if (spawnedCat) SwitchCatFollowToToy();
 
             if (pickupRoutine != null) StopCoroutine(pickupRoutine);
@@ -164,6 +193,17 @@ public class SpawnOnTap : MonoBehaviour
             spawnedFood = newObj;
             if (spawnedCat) SwitchCatFollowToFood();
         }
+    }
+
+    private void HandleToyReleased(Vector3 pos)
+    {
+        if (!spawnedCat || !spawnedToy) return;
+        if (IsCatHoldingToy()) return;
+
+        SwitchCatFollowToToy();
+
+        if (pickupRoutine != null) StopCoroutine(pickupRoutine);
+        pickupRoutine = StartCoroutine(PickupToyAndWanderRoutine());
     }
 
     private void SwitchCatFollowToFood()
@@ -255,10 +295,11 @@ public class SpawnOnTap : MonoBehaviour
 
             if (!pickedUp && d <= catPickupDistance)
             {
-                spawnedToy.transform.SetParent(holdPoint, worldPositionStays: false);
+                spawnedToy.transform.SetParent(holdPoint, false);
                 spawnedToy.transform.localPosition = Vector3.zero;
                 spawnedToy.transform.localRotation = Quaternion.identity;
                 pickedUp = true;
+
                 var followToy = spawnedCat.GetComponent<CatFollowToy>();
                 if (followToy)
                 {
@@ -304,9 +345,8 @@ public class SpawnOnTap : MonoBehaviour
             float dToCam = Vector3.Distance(spawnedCat.transform.position, cam.position);
             if (dToCam <= catDropDistance)
             {
-                spawnedToy.transform.SetParent(null, worldPositionStays: true);
-                Vector3 dropPos = cam.position +
-                                  Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized * toyDropForward;
+                spawnedToy.transform.SetParent(null, true);
+                Vector3 dropPos = cam.position + Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized * toyDropForward;
                 spawnedToy.transform.position = dropPos;
                 spawnedToy.transform.rotation = Quaternion.LookRotation(
                     Vector3.ProjectOnPlane(cam.forward, Vector3.up), Vector3.up);
