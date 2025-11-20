@@ -3,14 +3,12 @@ using System.Collections;
 
 public class CatMovement : MonoBehaviour
 {
-    [Header("Random Walk")]
     public float moveSpeed = 0.5f;
     public float waitTime = 1.0f;
     public float moveRange = 1.5f;
     public float rotationSpeed = 5f;
     public float startDelay = 0.1f; 
 
-    [Header("Grounding")]
     public float planeYOverride = float.NaN; 
 
     private Vector3 areaCenter;

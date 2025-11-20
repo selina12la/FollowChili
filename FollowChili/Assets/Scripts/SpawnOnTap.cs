@@ -6,9 +6,9 @@ using UnityEngine.XR.ARSubsystems;
 
 public class SpawnOnTap : MonoBehaviour
 {
-    [Header("AR")] public ARRaycastManager raycastManager;
+    public ARRaycastManager raycastManager;
 
-    [Header("Prefabs")] public GameObject catPrefab;
+    public GameObject catPrefab;
     public GameObject toyPrefab;
     public GameObject foodPrefab;
 
@@ -18,7 +18,7 @@ public class SpawnOnTap : MonoBehaviour
 
     static readonly List<ARRaycastHit> hits = new List<ARRaycastHit>();
 
-    [Header("Toy / Return")] public float catPickupDistance = 0.25f;
+    public float catPickupDistance = 0.25f;
     public float catDropDistance = 0.25f;
     public float toyDropForward = 0.45f;
 
@@ -110,95 +110,94 @@ public class SpawnOnTap : MonoBehaviour
         callCatRoutine = StartCoroutine(CallCatRoutine());
     }
 
-  private IEnumerator CallCatRoutine()
-{
-    if (!spawnedCat) yield break;
-
-    Transform cam = Camera.main.transform;
-
-    var followFood = spawnedCat.GetComponent<CatFollowFood>();
-    var followToy  = spawnedCat.GetComponent<CatFollowToy>();
-    var wander     = spawnedCat.GetComponent<CatMovement>();
-    var animator   = spawnedCat.GetComponent<Animator>();
-
-     if (followFood)
+    private IEnumerator CallCatRoutine()
     {
-        followFood.ClearTarget();
-        followFood.enabled = false;
-    }
+        if (!spawnedCat) yield break;
 
-    if (followToy)
-    {
-        followToy.ClearTarget();
-        followToy.enabled = false;
-    }
+        Transform cam = Camera.main.transform;
 
-    if (wander)
-    {
-        wander.enabled = false;
-    }
+        var followFood = spawnedCat.GetComponent<CatFollowFood>();
+        var followToy = spawnedCat.GetComponent<CatFollowToy>();
+        var wander = spawnedCat.GetComponent<CatMovement>();
+        var animator = spawnedCat.GetComponent<Animator>();
 
-    Vector3 forwardFlat = Vector3.ProjectOnPlane(cam.forward, Vector3.up);
-    if (forwardFlat.sqrMagnitude < 0.001f)
-        forwardFlat = cam.forward;
-
-    forwardFlat.y = 0f;
-    forwardFlat.Normalize();
-
-    float groundY = spawnedCat.transform.position.y;
-
-    Vector3 targetPos = cam.position;
-    targetPos.y = groundY;
-    targetPos -= forwardFlat * 0.01f; 
-
-    if (animator)
-        animator.SetBool("isWalking", true);
-
-    while (spawnedCat && Vector3.Distance(spawnedCat.transform.position, targetPos) > 0.005f)
-    {
-        Vector3 newPos = Vector3.MoveTowards(
-            spawnedCat.transform.position,
-            targetPos,
-            0.9f * Time.deltaTime
-        );
-
-        newPos.y = groundY;
-        spawnedCat.transform.position = newPos;
-
-        Vector3 dirToCam = cam.position - spawnedCat.transform.position;
-        dirToCam.y = 0f;
-        if (dirToCam.sqrMagnitude > 0.0001f)
+        if (followFood)
         {
-            Quaternion tRot = Quaternion.LookRotation(dirToCam);
-            spawnedCat.transform.rotation = Quaternion.Slerp(
-                spawnedCat.transform.rotation,
-                tRot,
-                10f * Time.deltaTime
-            );
+            followFood.ClearTarget();
+            followFood.enabled = false;
         }
 
-        yield return null;
+        if (followToy)
+        {
+            followToy.ClearTarget();
+            followToy.enabled = false;
+        }
+
+        if (wander)
+        {
+            wander.enabled = false;
+        }
+
+        Vector3 forwardFlat = Vector3.ProjectOnPlane(cam.forward, Vector3.up);
+        if (forwardFlat.sqrMagnitude < 0.001f)
+            forwardFlat = cam.forward;
+
+        forwardFlat.y = 0f;
+        forwardFlat.Normalize();
+
+        float groundY = spawnedCat.transform.position.y;
+
+        Vector3 targetPos = cam.position;
+        targetPos.y = groundY;
+        targetPos -= forwardFlat * 0.01f;
+
+        if (animator)
+            animator.SetBool("isWalking", true);
+
+        while (spawnedCat && Vector3.Distance(spawnedCat.transform.position, targetPos) > 0.005f)
+        {
+            Vector3 newPos = Vector3.MoveTowards(
+                spawnedCat.transform.position,
+                targetPos,
+                0.9f * Time.deltaTime
+            );
+
+            newPos.y = groundY;
+            spawnedCat.transform.position = newPos;
+
+            Vector3 dirToCam = cam.position - spawnedCat.transform.position;
+            dirToCam.y = 0f;
+            if (dirToCam.sqrMagnitude > 0.0001f)
+            {
+                Quaternion tRot = Quaternion.LookRotation(dirToCam);
+                spawnedCat.transform.rotation = Quaternion.Slerp(
+                    spawnedCat.transform.rotation,
+                    tRot,
+                    10f * Time.deltaTime
+                );
+            }
+
+            yield return null;
+        }
+
+        if (!spawnedCat) yield break;
+
+        if (animator)
+            animator.SetBool("isWalking", false);
+
+        Vector3 finalDir = cam.position - spawnedCat.transform.position;
+        finalDir.y = 0f;
+        if (finalDir.sqrMagnitude > 0.0001f)
+            spawnedCat.transform.rotation = Quaternion.LookRotation(finalDir, Vector3.up);
+
+        if (animator && !string.IsNullOrEmpty(sitTriggerName))
+        {
+            animator.ResetTrigger(sitTriggerName);
+            animator.SetTrigger(sitTriggerName);
+        }
+
+        callCatRoutine = null;
     }
-
-    if (!spawnedCat) yield break;
-
-    if (animator)
-        animator.SetBool("isWalking", false);
-
-    Vector3 finalDir = cam.position - spawnedCat.transform.position;
-    finalDir.y = 0f;
-    if (finalDir.sqrMagnitude > 0.0001f)
-        spawnedCat.transform.rotation = Quaternion.LookRotation(finalDir, Vector3.up);
-
-    if (animator && !string.IsNullOrEmpty(sitTriggerName))
-    {
-        animator.ResetTrigger(sitTriggerName);
-        animator.SetTrigger(sitTriggerName);
-    }
-
-    callCatRoutine = null;
-}
-
 
 
     private void SpawnObject(GameObject prefab, bool isToy)
@@ -234,13 +233,13 @@ public class SpawnOnTap : MonoBehaviour
             if (spawnedToy) Destroy(spawnedToy);
             spawnedToy = newObj;
 
-           var interact = spawnedToy.GetComponent<ToyInteractable>();
+            var interact = spawnedToy.GetComponent<ToyInteractable>();
             if (interact != null)
             {
                 interact.OnReleased -= HandleToyReleased;
                 interact.OnReleased += HandleToyReleased;
 
-              
+
                 if (spawnedCat)
                     interact.SetAreaCenter(spawnedCat.transform.position);
                 else

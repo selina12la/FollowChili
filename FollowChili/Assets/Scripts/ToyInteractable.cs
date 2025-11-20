@@ -7,49 +7,41 @@ using UnityEngine.XR.ARSubsystems;
 [RequireComponent(typeof(Collider))]
 public class ToyInteractable : MonoBehaviour
 {
-    [Header("Physics Throw")]
     public float minThrowForce = 2f;
     public float maxThrowForce = 8f;
     public float upwardForceRatio = 0.5f;
 
-    [Header("Refs (werden automatisch gesetzt)")]
     public ARRaycastManager arRaycastManager;
     public Camera mainCamera;
 
-    [Header("Events")]
+
     public Action<Vector3> OnReleased;
 
-    
+
     private bool isBeingDragged = false;
     private Vector3 grabOffset = Vector3.zero;
 
-    
-    private float halfHeight = -1f;   
-    private float lastPlaneY = 0f;   
-    private bool  hasPlaneY = false;
-    
-   public bool limitArea = true;
 
-     public float maxAreaRadius = 2.0f;
-    
+    private float halfHeight = -1f;
+    private float lastPlaneY = 0f;
+    private bool hasPlaneY = false;
+
+    public bool limitArea = true;
+
+    public float maxAreaRadius = 2.0f;
+
     private Vector3 areaCenter;
 
     private static readonly List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
 
-    [Header("Throw Settings")]
-    [Tooltip("Ab dieser Pixel-Geschwindigkeit gilt die Geste als 'Wurf'")]
     public float throwMinScreenVelocity = 1000f;
 
-    [Tooltip("Wie weit der Ball maximal fliegen kann (in Metern)")]
     public float throwMaxDistance = 2.0f;
 
-    [Tooltip("Wie weit der Ball mindestens fliegt (in Metern)")]
     public float throwMinDistance = 0.3f;
 
-    [Tooltip("Dauer des Wurfs in Sekunden")]
     public float throwDuration = 0.4f;
 
-    [Tooltip("Maximale Höhe des Bogens über dem Boden (in Metern)")]
     public float throwArcHeight = 0.15f;
 
     private bool isBeingThrown = false;
@@ -120,8 +112,6 @@ public class ToyInteractable : MonoBehaviour
     }
 
 
-
- 
     private void TryBeginGrab(Vector2 screenPos)
     {
         if (mainCamera == null) mainCamera = Camera.main;
@@ -133,10 +123,10 @@ public class ToyInteractable : MonoBehaviour
             {
                 if (transform.parent != null)
                 {
-                    transform.SetParent(null, true);  
+                    transform.SetParent(null, true);
                 }
 
-                GetHalfHeight(); 
+                GetHalfHeight();
 
                 var rb = GetComponent<Rigidbody>();
                 if (rb)
@@ -145,9 +135,9 @@ public class ToyInteractable : MonoBehaviour
                     rb.useGravity = false;
                 }
 
-                grabOffset   = transform.position - hit.point;
+                grabOffset = transform.position - hit.point;
                 isBeingDragged = true;
-                
+
                 lastScreenPos1 = screenPos;
                 lastScreenPos2 = screenPos;
                 lastTime1 = Time.time;
@@ -159,16 +149,17 @@ public class ToyInteractable : MonoBehaviour
     private void ContinueDrag(Vector2 screenPos)
     {
         lastScreenPos2 = lastScreenPos1;
-        lastTime2      = lastTime1;
+        lastTime2 = lastTime1;
 
         lastScreenPos1 = screenPos;
-        lastTime1      = Time.time;
+        lastTime1 = Time.time;
 
-        if (arRaycastManager != null && arRaycastManager.Raycast(screenPos, s_Hits, TrackableType.Planes) && s_Hits.Count > 0)
+        if (arRaycastManager != null && arRaycastManager.Raycast(screenPos, s_Hits, TrackableType.Planes) &&
+            s_Hits.Count > 0)
         {
             var pose = s_Hits[0].pose;
             lastPlaneY = pose.position.y;
-            hasPlaneY  = true;
+            hasPlaneY = true;
 
             Vector3 newPos = pose.position + pose.up * GetHalfHeight();
             newPos += Vector3.ProjectOnPlane(grabOffset, pose.up);
@@ -196,7 +187,7 @@ public class ToyInteractable : MonoBehaviour
         isBeingDragged = false;
 
         float dt = Mathf.Max(0.001f, lastTime1 - lastTime2);
-        Vector2 screenVelocity = (lastScreenPos1 - lastScreenPos2) / dt; 
+        Vector2 screenVelocity = (lastScreenPos1 - lastScreenPos2) / dt;
 
         if (screenVelocity.magnitude > throwMinScreenVelocity)
         {
@@ -216,7 +207,7 @@ public class ToyInteractable : MonoBehaviour
         if (rb)
         {
             rb.isKinematic = true;
-            rb.useGravity  = false;
+            rb.useGravity = false;
         }
 
         OnReleased?.Invoke(transform.position);
@@ -230,14 +221,14 @@ public class ToyInteractable : MonoBehaviour
         if (rb == null) return;
 
         Vector3 camForward = mainCamera.transform.forward;
-        Vector3 camRight   = mainCamera.transform.right;
+        Vector3 camRight = mainCamera.transform.right;
 
         Vector3 forward = Vector3.ProjectOnPlane(camForward, Vector3.up).normalized;
-        Vector3 right   = Vector3.ProjectOnPlane(camRight,   Vector3.up).normalized;
+        Vector3 right = Vector3.ProjectOnPlane(camRight, Vector3.up).normalized;
 
         Vector2 dir2D = screenVelocity.normalized;
         Vector3 worldDir = (forward * Mathf.Clamp(dir2D.y, -1f, 1f)
-                            + right   * Mathf.Clamp(dir2D.x, -1f, 1f)).normalized;
+                            + right * Mathf.Clamp(dir2D.x, -1f, 1f)).normalized;
 
         if (worldDir.sqrMagnitude < 0.0001f)
             worldDir = forward;
@@ -249,7 +240,7 @@ public class ToyInteractable : MonoBehaviour
         transform.SetParent(null, true);
 
         rb.isKinematic = false;
-        rb.useGravity  = true;
+        rb.useGravity = true;
 
         Vector3 velocity = worldDir * force;
         velocity.y += force * upwardForceRatio;
@@ -292,20 +283,28 @@ public class ToyInteractable : MonoBehaviour
         if (halfHeight >= 0f) return halfHeight;
 
         var rend = GetComponentInChildren<Renderer>();
-        if (rend) { halfHeight = rend.bounds.extents.y; return halfHeight; }
+        if (rend)
+        {
+            halfHeight = rend.bounds.extents.y;
+            return halfHeight;
+        }
 
         var col = GetComponentInChildren<Collider>();
-        if (col) { halfHeight = col.bounds.extents.y; return halfHeight; }
+        if (col)
+        {
+            halfHeight = col.bounds.extents.y;
+            return halfHeight;
+        }
 
-        halfHeight = 0.05f; 
+        halfHeight = 0.05f;
         return halfHeight;
     }
-    
+
     public void SetAreaCenter(Vector3 center)
     {
         areaCenter = center;
     }
-    
+
     void FixedUpdate()
     {
         if (!limitArea) return;
@@ -315,7 +314,7 @@ public class ToyInteractable : MonoBehaviour
 
         // Nur xz-Ebene betrachten (horizontal)
         Vector3 centerFlat = new Vector3(areaCenter.x, 0f, areaCenter.z);
-        Vector3 posFlat    = new Vector3(pos.x,       0f, pos.z);
+        Vector3 posFlat = new Vector3(pos.x, 0f, pos.z);
 
         Vector3 offset = posFlat - centerFlat;
         float dist = offset.magnitude;
@@ -341,6 +340,4 @@ public class ToyInteractable : MonoBehaviour
             }
         }
     }
-
-
 }
