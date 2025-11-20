@@ -79,13 +79,39 @@ public class ToyInteractable : MonoBehaviour
         if (isBeingThrown) return;
 
 #if UNITY_EDITOR
-     
-        if (Input.GetMouseButtonDown(0)) TryBeginGrab(Input.mousePosition);
-        else if (Input.GetMouseButton(0) && isBeingDragged) ContinueDrag(Input.mousePosition);
-        else if (Input.GetMouseButtonUp(0) && isBeingDragged) EndGrab();
-        
+        if (Input.GetMouseButtonDown(0))
+        {
+            TryBeginGrab(Input.mousePosition);
+        }
+        else if (Input.GetMouseButton(0) && isBeingDragged)
+        {
+            ContinueDrag(Input.mousePosition);
+        }
+        else if (Input.GetMouseButtonUp(0) && isBeingDragged)
+        {
+            EndGrab();
+        }
+#else
+    if (Input.touchCount == 0) return;
+
+    Touch t = Input.GetTouch(0);
+
+    if (t.phase == TouchPhase.Began)
+    {
+        TryBeginGrab(t.position);
+    }
+    else if ((t.phase == TouchPhase.Moved || t.phase == TouchPhase.Stationary) && isBeingDragged)
+    {
+        ContinueDrag(t.position);
+    }
+    else if ((t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled) && isBeingDragged)
+    {
+        EndGrab();
+    }
 #endif
     }
+
+
 
  
     private void TryBeginGrab(Vector2 screenPos)

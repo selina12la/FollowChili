@@ -6,11 +6,9 @@ using UnityEngine.XR.ARSubsystems;
 
 public class SpawnOnTap : MonoBehaviour
 {
-    [Header("AR")]
-    public ARRaycastManager raycastManager;
+    [Header("AR")] public ARRaycastManager raycastManager;
 
-    [Header("Prefabs")]
-    public GameObject catPrefab;
+    [Header("Prefabs")] public GameObject catPrefab;
     public GameObject toyPrefab;
     public GameObject foodPrefab;
 
@@ -20,16 +18,15 @@ public class SpawnOnTap : MonoBehaviour
 
     static readonly List<ARRaycastHit> hits = new List<ARRaycastHit>();
 
-    [Header("Toy / Return")]
-    public float catPickupDistance = 0.25f;
+    [Header("Toy / Return")] public float catPickupDistance = 0.25f;
     public float catDropDistance = 0.25f;
     public float toyDropForward = 0.45f;
 
-    [Header("Call Cat")]
-    public float callCatDistance = 1.2f;
+    [Header("Call Cat")] public float callCatDistance = 0.01f;
 
     private Coroutine pickupRoutine;
     private Coroutine returnWithToyRoutine;
+    private Coroutine callCatRoutine;
 
     private Transform callTargetTransform;
 
@@ -104,44 +101,98 @@ public class SpawnOnTap : MonoBehaviour
     {
         if (!spawnedCat) return;
 
-        if (IsCatHoldingToy())
-        {
-            if (returnWithToyRoutine != null) StopCoroutine(returnWithToyRoutine);
-            returnWithToyRoutine = StartCoroutine(ReturnToyToCameraRoutine());
-            return;
-        }
-
-        Transform cam = Camera.main.transform;
         EnsureCatComponents(spawnedCat);
 
-        var followFood = spawnedCat.GetComponent<CatFollowFood>();
-        var followToy = spawnedCat.GetComponent<CatFollowToy>();
-        var wander = spawnedCat.GetComponent<CatMovement>();
+        if (callCatRoutine != null)
+            StopCoroutine(callCatRoutine);
 
-        if (wander) wander.enabled = false;
-
-        Vector3 forwardFlat = Vector3.ProjectOnPlane(cam.forward, Vector3.up);
-        if (forwardFlat.sqrMagnitude < 0.0001f) forwardFlat = cam.forward;
-        forwardFlat.y = 0f;
-        forwardFlat.Normalize();
-
-        float y = spawnedCat.transform.position.y;
-        Vector3 basePos = cam.position;
-        basePos.y = y;
-        callTargetTransform.position = basePos + forwardFlat * callCatDistance;
-        callTargetTransform.rotation = Quaternion.LookRotation(-forwardFlat, Vector3.up);
-
-        if (followFood)
-        {
-            followFood.enabled = true;
-            followFood.CallCatTo(callTargetTransform);
-        }
-        else if (followToy)
-        {
-            followToy.enabled = true;
-            followToy.CallCatTo(callTargetTransform);
-        }
+        callCatRoutine = StartCoroutine(CallCatRoutine());
     }
+
+  private IEnumerator CallCatRoutine()
+{
+    if (!spawnedCat) yield break;
+
+    Transform cam = Camera.main.transform;
+
+    var followFood = spawnedCat.GetComponent<CatFollowFood>();
+    var followToy  = spawnedCat.GetComponent<CatFollowToy>();
+    var wander     = spawnedCat.GetComponent<CatMovement>();
+    var animator   = spawnedCat.GetComponent<Animator>();
+
+    if (followFood)
+    {
+        followFood.ClearTarget();
+        followFood.enabled = false;
+    }
+
+    if (followToy)
+    {
+        followToy.ClearTarget();
+        followToy.enabled = false;
+    }
+
+    if (wander)
+    {
+        wander.enabled = false;
+    }
+
+    Vector3 forwardFlat = Vector3.ProjectOnPlane(cam.forward, Vector3.up);
+    if (forwardFlat.sqrMagnitude < 0.001f)
+        forwardFlat = cam.forward;
+
+    forwardFlat.y = 0f;
+    forwardFlat.Normalize();
+
+    float groundY = spawnedCat.transform.position.y;
+
+    Vector3 targetPos = cam.position;
+    targetPos.y = groundY;
+    targetPos -= forwardFlat * 0.01f;
+
+    if (animator)
+        animator.SetBool("isWalking", true);
+
+    while (spawnedCat && Vector3.Distance(spawnedCat.transform.position, targetPos) > 0.005f)
+    {
+        Vector3 newPos = Vector3.MoveTowards(
+            spawnedCat.transform.position,
+            targetPos,
+            0.9f * Time.deltaTime
+        );
+
+        newPos.y = groundY;
+        spawnedCat.transform.position = newPos;
+
+        Vector3 dirToCam = cam.position - spawnedCat.transform.position;
+        dirToCam.y = 0f;
+        if (dirToCam.sqrMagnitude > 0.0001f)
+        {
+            Quaternion tRot = Quaternion.LookRotation(dirToCam);
+            spawnedCat.transform.rotation = Quaternion.Slerp(
+                spawnedCat.transform.rotation,
+                tRot,
+                10f * Time.deltaTime
+            );
+        }
+
+        yield return null;
+    }
+
+    if (!spawnedCat) yield break;
+
+    if (animator)
+        animator.SetBool("isWalking", false);
+
+    Vector3 finalDir = cam.position - spawnedCat.transform.position;
+    finalDir.y = 0f;
+    if (finalDir.sqrMagnitude > 0.0001f)
+        spawnedCat.transform.rotation = Quaternion.LookRotation(finalDir, Vector3.up);
+
+    callCatRoutine = null;
+}
+
+
 
     private void SpawnObject(GameObject prefab, bool isToy)
     {
@@ -296,8 +347,10 @@ public class SpawnOnTap : MonoBehaviour
             if (!pickedUp && d <= catPickupDistance)
             {
                 spawnedToy.transform.SetParent(holdPoint, false);
-                spawnedToy.transform.localPosition = Vector3.zero;
+
+                spawnedToy.transform.localPosition = new Vector3(0f, 0.01f, 0.01f);
                 spawnedToy.transform.localRotation = Quaternion.identity;
+
                 pickedUp = true;
 
                 var followToy = spawnedCat.GetComponent<CatFollowToy>();
@@ -346,7 +399,8 @@ public class SpawnOnTap : MonoBehaviour
             if (dToCam <= catDropDistance)
             {
                 spawnedToy.transform.SetParent(null, true);
-                Vector3 dropPos = cam.position + Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized * toyDropForward;
+                Vector3 dropPos = cam.position +
+                                  Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized * toyDropForward;
                 spawnedToy.transform.position = dropPos;
                 spawnedToy.transform.rotation = Quaternion.LookRotation(
                     Vector3.ProjectOnPlane(cam.forward, Vector3.up), Vector3.up);
@@ -355,12 +409,6 @@ public class SpawnOnTap : MonoBehaviour
                 {
                     followToy.ClearTarget();
                     followToy.enabled = false;
-                }
-
-                if (wander)
-                {
-                    wander.enabled = true;
-                    wander.RestartAfterDelay();
                 }
 
                 yield break;
@@ -372,12 +420,22 @@ public class SpawnOnTap : MonoBehaviour
 
     private void EnsureCatComponents(GameObject cat)
     {
-        if (!cat.GetComponent<CatFollowFood>()) cat.AddComponent<CatFollowFood>();
-        if (!cat.GetComponent<CatFollowToy>()) cat.AddComponent<CatFollowToy>();
-        if (!cat.GetComponent<CatMovement>()) cat.AddComponent<CatMovement>();
+        if (!cat.GetComponent<CatFollowFood>())
+            cat.AddComponent<CatFollowFood>();
+
+        if (!cat.GetComponent<CatFollowToy>())
+            cat.AddComponent<CatFollowToy>();
+
+        if (!cat.GetComponent<CatMovement>())
+            cat.AddComponent<CatMovement>();
+
         if (!cat.GetComponent<Animator>())
-            Debug.LogWarning("Katze Prefab hat keinen Animator! (isWalking Bool wird dann ignoriert)");
+            cat.AddComponent<Animator>();
+
+        if (!cat.GetComponent<CatPetting>())
+            cat.AddComponent<CatPetting>();
     }
+
 
     private bool IsCatHoldingToy()
     {
@@ -404,5 +462,44 @@ public class SpawnOnTap : MonoBehaviour
         }
 
         return 0f;
+    }
+
+    void Update()
+    {
+        if (Input.touchCount == 0) return;
+
+        Touch touch = Input.GetTouch(0);
+
+        if (touch.phase != TouchPhase.Began) return;
+
+        if (!spawnedCat) return;
+
+        Ray ray = Camera.main.ScreenPointToRay(touch.position);
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            if (hit.transform == null) return;
+
+            if (hit.transform == spawnedCat.transform || hit.transform.IsChildOf(spawnedCat.transform))
+            {
+                var pet = spawnedCat.GetComponent<CatPetting>();
+                if (pet != null)
+                {
+                    pet.Pet();
+                }
+            }
+        }
+    }
+
+    private float GetHalfHeight(GameObject go)
+    {
+        var rend = go.GetComponentInChildren<Renderer>();
+        if (rend)
+            return rend.bounds.extents.y;
+
+        var col = go.GetComponentInChildren<Collider>();
+        if (col)
+            return col.bounds.extents.y;
+
+        return 0.05f;
     }
 }
