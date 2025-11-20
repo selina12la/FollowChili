@@ -18,13 +18,13 @@ public class ToyInteractable : MonoBehaviour
     public Action<Vector3> OnReleased;
 
 
-    private bool isBeingDragged = false;
+    private bool isBeingDragged;
     private Vector3 grabOffset = Vector3.zero;
 
 
     private float halfHeight = -1f;
-    private float lastPlaneY = 0f;
-    private bool hasPlaneY = false;
+    private float lastPlaneY;
+    private bool hasPlaneY;
 
     public bool limitArea = true;
 
@@ -44,7 +44,7 @@ public class ToyInteractable : MonoBehaviour
 
     public float throwArcHeight = 0.15f;
 
-    private bool isBeingThrown = false;
+    private bool isBeingThrown;
 
     private Vector2 lastScreenPos1;
     private Vector2 lastScreenPos2;
@@ -246,36 +246,6 @@ public class ToyInteractable : MonoBehaviour
         velocity.y += force * upwardForceRatio;
 
         rb.linearVelocity = velocity;
-    }
-
-    private System.Collections.IEnumerator ThrowRoutine(Vector3 startPos, Vector3 targetPos)
-    {
-        isBeingThrown = true;
-
-        float elapsed = 0f;
-        while (elapsed < throwDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / throwDuration);
-
-            Vector3 pos = Vector3.Lerp(startPos, targetPos, t);
-
-            float height = Mathf.Sin(t * Mathf.PI) * throwArcHeight;
-            pos.y += height;
-
-            transform.position = pos;
-            yield return null;
-        }
-
-        Vector3 finalPos = targetPos;
-        if (hasPlaneY)
-        {
-            finalPos.y = lastPlaneY + GetHalfHeight();
-        }
-
-        transform.position = finalPos;
-
-        isBeingThrown = false;
     }
 
     private float GetHalfHeight()

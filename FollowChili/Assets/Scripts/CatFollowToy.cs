@@ -10,7 +10,7 @@ public class CatFollowToy : MonoBehaviour
     public float stopDistance = 0.20f;
 
     private Animator animator;
-    private bool isWalkingAnim = false;
+    private bool isWalkingAnim;
 
     void Start()
     {
@@ -40,7 +40,7 @@ public class CatFollowToy : MonoBehaviour
 
         if (shouldWalk)
         {
-            transform.position += toTarget.normalized * moveSpeed * Time.deltaTime;
+            transform.position += toTarget.normalized * (moveSpeed * Time.deltaTime);
 
             if (toTarget.sqrMagnitude > 0.0001f)
             {

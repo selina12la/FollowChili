@@ -7,15 +7,15 @@ public class CatMovement : MonoBehaviour
     public float waitTime = 1.0f;
     public float moveRange = 1.5f;
     public float rotationSpeed = 5f;
-    public float startDelay = 0.1f; 
+    public float startDelay = 0.1f;
 
-    public float planeYOverride = float.NaN; 
+    public float planeYOverride = float.NaN;
 
     private Vector3 areaCenter;
     private Vector3 targetPosition;
-    private bool isMoving = false;
+    private bool isMoving;
     private Animator animator;
-    private bool routineRunning = false;
+    private bool routineRunning;
 
     void Awake()
     {

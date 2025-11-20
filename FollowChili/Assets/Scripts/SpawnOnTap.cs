@@ -362,9 +362,7 @@ public class SpawnOnTap : MonoBehaviour
 
                 spawnedToy.transform.localPosition = new Vector3(0f, 0.01f, 0.01f);
                 spawnedToy.transform.localRotation = Quaternion.identity;
-
-                pickedUp = true;
-
+                
                 var followToy = spawnedCat.GetComponent<CatFollowToy>();
                 if (followToy)
                 {
@@ -385,50 +383,6 @@ public class SpawnOnTap : MonoBehaviour
         }
     }
 
-    private IEnumerator ReturnToyToCameraRoutine()
-    {
-        if (!spawnedCat || !spawnedToy) yield break;
-
-        var followToy = spawnedCat.GetComponent<CatFollowToy>();
-        var followFood = spawnedCat.GetComponent<CatFollowFood>();
-        var wander = spawnedCat.GetComponent<CatMovement>();
-
-        if (wander) wander.enabled = false;
-        if (followFood)
-        {
-            followFood.ClearTarget();
-            followFood.enabled = false;
-        }
-
-        if (followToy) followToy.enabled = true;
-
-        Transform cam = Camera.main.transform;
-        followToy.CallCatTo(cam);
-
-        while (spawnedCat && spawnedToy)
-        {
-            float dToCam = Vector3.Distance(spawnedCat.transform.position, cam.position);
-            if (dToCam <= catDropDistance)
-            {
-                spawnedToy.transform.SetParent(null, true);
-                Vector3 dropPos = cam.position +
-                                  Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized * toyDropForward;
-                spawnedToy.transform.position = dropPos;
-                spawnedToy.transform.rotation = Quaternion.LookRotation(
-                    Vector3.ProjectOnPlane(cam.forward, Vector3.up), Vector3.up);
-
-                if (followToy)
-                {
-                    followToy.ClearTarget();
-                    followToy.enabled = false;
-                }
-
-                yield break;
-            }
-
-            yield return null;
-        }
-    }
 
     private void EnsureCatComponents(GameObject cat)
     {
@@ -500,18 +454,5 @@ public class SpawnOnTap : MonoBehaviour
                 }
             }
         }
-    }
-
-    private float GetHalfHeight(GameObject go)
-    {
-        var rend = go.GetComponentInChildren<Renderer>();
-        if (rend)
-            return rend.bounds.extents.y;
-
-        var col = go.GetComponentInChildren<Collider>();
-        if (col)
-            return col.bounds.extents.y;
-
-        return 0.05f;
     }
 }

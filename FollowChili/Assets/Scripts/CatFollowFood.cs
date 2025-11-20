@@ -15,9 +15,9 @@ public class CatFollowFood : MonoBehaviour
     public float crumbleOffsetY = 0.02f;
     public AudioClip eatSound;
 
-    private bool isConsuming = false;
+    private bool isConsuming;
     private Animator animator;
-    private bool isWalkingAnim = false;
+    private bool isWalkingAnim;
     private AudioSource audioSource;
 
     void Start()
@@ -58,7 +58,7 @@ public class CatFollowFood : MonoBehaviour
 
         if (shouldWalk)
         {
-            transform.position += toTarget.normalized * moveSpeed * Time.deltaTime;
+            transform.position += toTarget.normalized * (moveSpeed * Time.deltaTime);
 
             if (toTarget.sqrMagnitude > 0.0001f)
             {
