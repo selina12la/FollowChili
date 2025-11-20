@@ -22,7 +22,8 @@ public class SpawnOnTap : MonoBehaviour
     public float catDropDistance = 0.25f;
     public float toyDropForward = 0.45f;
 
-    [Header("Call Cat")] public float callCatDistance = 0.01f;
+    public float callCatDistance = 0.01f;
+    public string sitTriggerName = "Sit";
 
     private Coroutine pickupRoutine;
     private Coroutine returnWithToyRoutine;
@@ -120,7 +121,7 @@ public class SpawnOnTap : MonoBehaviour
     var wander     = spawnedCat.GetComponent<CatMovement>();
     var animator   = spawnedCat.GetComponent<Animator>();
 
-    if (followFood)
+     if (followFood)
     {
         followFood.ClearTarget();
         followFood.enabled = false;
@@ -148,7 +149,7 @@ public class SpawnOnTap : MonoBehaviour
 
     Vector3 targetPos = cam.position;
     targetPos.y = groundY;
-    targetPos -= forwardFlat * 0.01f;
+    targetPos -= forwardFlat * 0.01f; 
 
     if (animator)
         animator.SetBool("isWalking", true);
@@ -188,6 +189,12 @@ public class SpawnOnTap : MonoBehaviour
     finalDir.y = 0f;
     if (finalDir.sqrMagnitude > 0.0001f)
         spawnedCat.transform.rotation = Quaternion.LookRotation(finalDir, Vector3.up);
+
+    if (animator && !string.IsNullOrEmpty(sitTriggerName))
+    {
+        animator.ResetTrigger(sitTriggerName);
+        animator.SetTrigger(sitTriggerName);
+    }
 
     callCatRoutine = null;
 }
