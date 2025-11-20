@@ -1231,6 +1231,7 @@ MonoBehaviour:
   catDropDistance: 0.25
   toyDropForward: 0.4
   callCatDistance: 1.2
+  sitTriggerName: Sit
 --- !u!4 &1421287502
 Transform:
   m_ObjectHideFlags: 0

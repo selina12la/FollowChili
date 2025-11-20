@@ -239,6 +239,7 @@ GameObject:
   - component: {fileID: 5619985934887145615}
   - component: {fileID: 1419218724156838682}
   - component: {fileID: -290692611860032189}
+  - component: {fileID: -6001873283649485371}
   m_Layer: 0
   m_Name: cat
   m_TagString: Untagged
@@ -323,6 +324,28 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.1, y: 0.2, z: 0.35}
   m_Center: {x: 0, y: 0.1, z: 0}
+--- !u!114 &-6001873283649485371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1526554761915109350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 791ab899235d16745b158a9665673a8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CatFollowFood
+  target: {fileID: 0}
+  moveSpeed: 0.5
+  rotationSpeed: 5
+  startWalkDistance: 0.35
+  stopDistance: 0.2
+  eatDuration: 1
+  pickUpDuration: 0.1
+  holdPoint: {fileID: 0}
+  crumblePrefab: {fileID: 8190613915174943411, guid: a9a9f2e771df7d64eae8e5aa1d696755, type: 3}
+  crumbleOffsetY: 0.02
 --- !u!1 &1921977085086819228
 GameObject:
   m_ObjectHideFlags: 0
