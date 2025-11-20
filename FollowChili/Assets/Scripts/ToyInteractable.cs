@@ -27,6 +27,12 @@ public class ToyInteractable : MonoBehaviour
     private float halfHeight = -1f;   
     private float lastPlaneY = 0f;   
     private bool  hasPlaneY = false;
+    
+   public bool limitArea = true;
+
+     public float maxAreaRadius = 2.0f;
+    
+    private Vector3 areaCenter;
 
     private static readonly List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
 
@@ -72,6 +78,8 @@ public class ToyInteractable : MonoBehaviour
             rb.isKinematic = true;
             rb.useGravity = false;
         }
+
+        areaCenter = transform.position;
     }
 
     void Update()
@@ -292,4 +300,47 @@ public class ToyInteractable : MonoBehaviour
         halfHeight = 0.05f; 
         return halfHeight;
     }
+    
+    public void SetAreaCenter(Vector3 center)
+    {
+        areaCenter = center;
+    }
+    
+    void FixedUpdate()
+    {
+        if (!limitArea) return;
+
+        var rb = GetComponent<Rigidbody>();
+        Vector3 pos = transform.position;
+
+        // Nur xz-Ebene betrachten (horizontal)
+        Vector3 centerFlat = new Vector3(areaCenter.x, 0f, areaCenter.z);
+        Vector3 posFlat    = new Vector3(pos.x,       0f, pos.z);
+
+        Vector3 offset = posFlat - centerFlat;
+        float dist = offset.magnitude;
+
+        if (dist > maxAreaRadius && dist > 0.0001f)
+        {
+            // zurück auf Kreisrand klemmen
+            Vector3 clampedFlat = centerFlat + offset.normalized * maxAreaRadius;
+
+            pos.x = clampedFlat.x;
+            pos.z = clampedFlat.z;
+            transform.position = pos;
+
+            // Physik stoppen, damit er nicht weiter rollt / bounct
+            if (rb)
+            {
+#if UNITY_6000_0_OR_NEWER
+                rb.linearVelocity = Vector3.zero;
+#else
+                rb.velocity = Vector3.zero;
+#endif
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+    }
+
+
 }

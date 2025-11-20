@@ -227,11 +227,17 @@ public class SpawnOnTap : MonoBehaviour
             if (spawnedToy) Destroy(spawnedToy);
             spawnedToy = newObj;
 
-            var interact = spawnedToy.GetComponent<ToyInteractable>();
+           var interact = spawnedToy.GetComponent<ToyInteractable>();
             if (interact != null)
             {
                 interact.OnReleased -= HandleToyReleased;
                 interact.OnReleased += HandleToyReleased;
+
+              
+                if (spawnedCat)
+                    interact.SetAreaCenter(spawnedCat.transform.position);
+                else
+                    interact.SetAreaCenter(spawnedToy.transform.position); // Fallback
             }
 
             if (spawnedCat) SwitchCatFollowToToy();
