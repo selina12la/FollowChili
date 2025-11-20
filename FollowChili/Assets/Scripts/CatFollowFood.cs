@@ -13,10 +13,12 @@ public class CatFollowFood : MonoBehaviour
     public Transform holdPoint;
     public GameObject crumblePrefab;
     public float crumbleOffsetY = 0.02f;
+    public AudioClip eatSound;
 
     private bool isConsuming = false;
     private Animator animator;
     private bool isWalkingAnim = false;
+    private AudioSource audioSource;
 
     void Start()
     {
@@ -28,6 +30,8 @@ public class CatFollowFood : MonoBehaviour
             var hp = transform.Find("HoldPoint");
             if (hp != null) holdPoint = hp;
         }
+
+        audioSource = GetComponent<AudioSource>();
     }
 
     public void SetTarget(Transform newTarget)
@@ -120,6 +124,9 @@ public class CatFollowFood : MonoBehaviour
 
         foodTf.position = hp.position;
         foodTf.rotation = hp.rotation;
+
+        if (audioSource != null && eatSound != null)
+            audioSource.PlayOneShot(eatSound);
 
         yield return new WaitForSeconds(eatDuration);
 

@@ -3,17 +3,12 @@ using UnityEngine;
 
 public class CatPetting : MonoBehaviour
 {
-    [Tooltip("Wie lange die Streichel-Animation dauern soll.")]
     public float petDuration = 2.0f;
 
-    [Header("Hearts")]
-    [Tooltip("Prefab mit Herz-Particle / Sprite, das über dem Kopf erscheinen soll.")]
     public GameObject heartsPrefab;
 
-    [Tooltip("Wie hoch über dem Kopf die Herzen erscheinen sollen.")]
     public float heartsHeightOffset = 0.2f;
 
-    [Tooltip("Wie lange die Herzen sichtbar bleiben (Sekunden).")]
     public float heartsLifetime = 1.5f;
 
     private Animator animator;
@@ -26,6 +21,10 @@ public class CatPetting : MonoBehaviour
     private bool wasFollowFood;
     private bool wasFollowToy;
     private bool wasWander;
+    
+    public AudioClip meowSound;
+    private AudioSource audioSource;
+
 
     void Awake()
     {
@@ -33,12 +32,18 @@ public class CatPetting : MonoBehaviour
         followFood = GetComponent<CatFollowFood>();
         followToy  = GetComponent<CatFollowToy>();
         wander     = GetComponent<CatMovement>();
+        audioSource = GetComponent<AudioSource>();
+
     }
 
     public void Pet()
     {
         if (isPetting) return;
         isPetting = true;
+        
+        if (audioSource != null && meowSound != null)
+            audioSource.PlayOneShot(meowSound);
+
 
         if (followFood)
         {
