@@ -12,6 +12,8 @@ public class SpawnOnTap : MonoBehaviour
     public GameObject toyPrefab;
     public GameObject foodPrefab;
 
+    public GameObject petHintUI;
+    
     private GameObject spawnedCat;
     private GameObject spawnedToy;
     private GameObject spawnedFood;
@@ -28,6 +30,8 @@ public class SpawnOnTap : MonoBehaviour
     private Coroutine pickupRoutine;
     private Coroutine returnWithToyRoutine;
     private Coroutine callCatRoutine;
+    
+    private Coroutine petHintRoutine;
 
     private Transform callTargetTransform;
 
@@ -78,25 +82,35 @@ public class SpawnOnTap : MonoBehaviour
 
     public void SpawnToy()
     {
+        if (spawnedToy != null)
+        {
+            Destroy(spawnedToy);
+            spawnedToy = null;
+
+            if (spawnedCat)
+            {
+                if (spawnedFood) 
+                    SwitchCatFollowToFood();  
+                else 
+                    EnableWander();           
+            }
+
+            return;
+        }
+
+      
         if (spawnedFood)
         {
             Destroy(spawnedFood);
             spawnedFood = null;
         }
 
-        if (spawnedToy != null)
-        {
-            if (spawnedToy == null) spawnedToy = null;
-            else
-            {
-                if (spawnedCat) SwitchCatFollowToToy();
-                return;
-            }
-        }
-
+      
         SpawnObject(toyPrefab, true);
+        
         if (spawnedCat) SwitchCatFollowToToy();
     }
+
 
     public void CallCat()
     {
@@ -195,9 +209,29 @@ public class SpawnOnTap : MonoBehaviour
             animator.ResetTrigger(sitTriggerName);
             animator.SetTrigger(sitTriggerName);
         }
+        ShowPetHint(5f);
 
         callCatRoutine = null;
     }
+    
+    private void ShowPetHint(float duration)
+    {
+        if (petHintUI == null) return;
+
+        if (petHintRoutine != null)
+            StopCoroutine(petHintRoutine);
+
+        petHintRoutine = StartCoroutine(PetHintRoutine(duration));
+    }
+
+    private IEnumerator PetHintRoutine(float duration)
+    {
+        petHintUI.SetActive(true);
+        yield return new WaitForSeconds(duration);
+        petHintUI.SetActive(false);
+        petHintRoutine = null;
+    }
+
 
 
     private void SpawnObject(GameObject prefab, bool isToy)
