@@ -24,7 +24,7 @@ public class CatMovement : MonoBehaviour
 
     void OnEnable()
     {
-        if (!routineRunning) StartCoroutine(MoveRoutine());
+        if (!routineRunning) StartCoroutine(MoveRoutine()); // Start wandering
     }
 
     void OnDisable()
@@ -61,6 +61,8 @@ public class CatMovement : MonoBehaviour
         {
             if (!isMoving)
             {
+                
+                // Pick random point to walk to
                 Vector2 randomCircle = Random.insideUnitCircle * moveRange;
                 float y = float.IsNaN(planeYOverride) ? transform.position.y : planeYOverride;
                 targetPosition = new Vector3(areaCenter.x + randomCircle.x, y, areaCenter.z + randomCircle.y);
@@ -70,6 +72,7 @@ public class CatMovement : MonoBehaviour
 
             transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
 
+            // Rotate toward movement direction
             Vector3 dir = targetPosition - transform.position;
             dir.y = 0f;
             if (dir.sqrMagnitude > 0.0001f)
@@ -78,6 +81,7 @@ public class CatMovement : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, tRot, rotationSpeed * Time.deltaTime);
             }
 
+            // Reached destination
             if (Vector3.Distance(transform.position, targetPosition) < 0.01f)
             {
                 isMoving = false;

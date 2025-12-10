@@ -130,6 +130,7 @@ public class SpawnOnTap : MonoBehaviour
 
         Transform cam = Camera.main.transform;
 
+        // Disable other movement while calling
         var followFood = spawnedCat.GetComponent<CatFollowFood>();
         var followToy = spawnedCat.GetComponent<CatFollowToy>();
         var wander = spawnedCat.GetComponent<CatMovement>();
@@ -152,6 +153,7 @@ public class SpawnOnTap : MonoBehaviour
             wander.enabled = false;
         }
 
+        // Position in front of camera
         Vector3 forwardFlat = Vector3.ProjectOnPlane(cam.forward, Vector3.up);
         if (forwardFlat.sqrMagnitude < 0.001f)
             forwardFlat = cam.forward;
@@ -168,6 +170,7 @@ public class SpawnOnTap : MonoBehaviour
         if (animator)
             animator.SetBool("isWalking", true);
 
+        // Move toward player
         while (spawnedCat && Vector3.Distance(spawnedCat.transform.position, targetPos) > 0.005f)
         {
             Vector3 newPos = Vector3.MoveTowards(
@@ -179,6 +182,7 @@ public class SpawnOnTap : MonoBehaviour
             newPos.y = groundY;
             spawnedCat.transform.position = newPos;
 
+            // Face player before sitting
             Vector3 dirToCam = cam.position - spawnedCat.transform.position;
             dirToCam.y = 0f;
             if (dirToCam.sqrMagnitude > 0.0001f)
@@ -464,6 +468,7 @@ public class SpawnOnTap : MonoBehaviour
         return 0f;
     }
 
+    // Petting through screen touch
     void Update()
     {
         if (Input.touchCount == 0) return;

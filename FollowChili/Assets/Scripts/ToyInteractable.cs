@@ -79,6 +79,7 @@ public class ToyInteractable : MonoBehaviour
         if (isBeingThrown) return;
 
 #if UNITY_EDITOR
+        //Mouse input for editor
         if (Input.GetMouseButtonDown(0))
         {
             TryBeginGrab(Input.mousePosition);
@@ -92,6 +93,7 @@ public class ToyInteractable : MonoBehaviour
             EndGrab();
         }
 #else
+ // touch input on device
     if (Input.touchCount == 0) return;
 
     Touch t = Input.GetTouch(0);
@@ -111,7 +113,7 @@ public class ToyInteractable : MonoBehaviour
 #endif
     }
 
-
+// Grab / Drag Handling
     private void TryBeginGrab(Vector2 screenPos)
     {
         if (mainCamera == null) mainCamera = Camera.main;
@@ -121,6 +123,7 @@ public class ToyInteractable : MonoBehaviour
         {
             if (hit.collider && (hit.collider.gameObject == gameObject || hit.collider.transform.IsChildOf(transform)))
             {
+                // Deatch from cat when grabbed
                 if (transform.parent != null)
                 {
                     transform.SetParent(null, true);
@@ -154,6 +157,7 @@ public class ToyInteractable : MonoBehaviour
         lastScreenPos1 = screenPos;
         lastTime1 = Time.time;
 
+        // Prefer AR plane hit for positioning
         if (arRaycastManager != null && arRaycastManager.Raycast(screenPos, s_Hits, TrackableType.Planes) &&
             s_Hits.Count > 0)
         {
@@ -167,6 +171,7 @@ public class ToyInteractable : MonoBehaviour
             return;
         }
 
+        //raycast against a horizontal plane
         if (mainCamera == null) mainCamera = Camera.main;
         Ray ray = mainCamera.ScreenPointToRay(screenPos);
 
@@ -220,6 +225,7 @@ public class ToyInteractable : MonoBehaviour
         var rb = GetComponent<Rigidbody>();
         if (rb == null) return;
 
+        // convert screen direction to world direction
         Vector3 camForward = mainCamera.transform.forward;
         Vector3 camRight = mainCamera.transform.right;
 
@@ -248,6 +254,7 @@ public class ToyInteractable : MonoBehaviour
         rb.linearVelocity = velocity;
     }
 
+    //Helpers
     private float GetHalfHeight()
     {
         if (halfHeight >= 0f) return halfHeight;

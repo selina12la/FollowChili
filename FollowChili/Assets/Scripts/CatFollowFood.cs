@@ -49,6 +49,7 @@ public class CatFollowFood : MonoBehaviour
             return;
         }
 
+        //Direction + distance to target
         Vector3 toTarget = target.position - transform.position;
         toTarget.y = 0f;
         float dist = toTarget.magnitude;
@@ -89,6 +90,7 @@ public class CatFollowFood : MonoBehaviour
         Transform foodTf = target;
         GameObject foodObj = foodTf.gameObject;
 
+        // Estimate ground position for crumble effect
         float groundY = foodTf.position.y;
         var rend = foodObj.GetComponentInChildren<Renderer>();
         if (rend != null) groundY = rend.bounds.min.y;
@@ -130,6 +132,7 @@ public class CatFollowFood : MonoBehaviour
 
         yield return new WaitForSeconds(eatDuration);
 
+        // Destroy food and spawn crumbles
         if (foodObj != null)
         {
             if (crumblePrefab != null)

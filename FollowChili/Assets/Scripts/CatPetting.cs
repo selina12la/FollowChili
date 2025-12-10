@@ -44,7 +44,7 @@ public class CatPetting : MonoBehaviour
         if (audioSource != null && meowSound != null)
             audioSource.PlayOneShot(meowSound);
 
-
+        // Disable active behaviours while peeting
         if (followFood)
         {
             wasFollowFood = followFood.enabled;
@@ -62,7 +62,8 @@ public class CatPetting : MonoBehaviour
             wasWander = wander.enabled;
             wander.enabled = false;
         }
-
+        
+        // Play pet animation
         if (animator)
         {
             animator.SetBool("isWalking", false);

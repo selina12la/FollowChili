@@ -40,6 +40,7 @@ public class CatFollowToy : MonoBehaviour
 
         if (shouldWalk)
         {
+            // Move toward target
             transform.position += toTarget.normalized * (moveSpeed * Time.deltaTime);
 
             if (toTarget.sqrMagnitude > 0.0001f)
